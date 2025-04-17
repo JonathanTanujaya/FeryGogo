@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "290091360925",
+    "project_id": "ferygogo-eb2cb",
+    "storage_bucket": "ferygogo-eb2cb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:290091360925:android:7066a2b406810a17c9aa74",
+        "android_client_info": {
+          "package_name": "com.example.ferygogo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQU5lHH_zzpFans6vpEOuiOYkDFsxOCqk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,11 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({Key? key}) : super(key: key);
 
+  Future<void> _login(BuildContext context, String email, String password) async {
+    try {
+      // Sign in the user with Firebase Authentication
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      // Retrieve user data from Firebase Realtime Database
+      DatabaseReference databaseRef = FirebaseDatabase.instance.ref("users/${userCredential.user?.uid}");
+      DataSnapshot snapshot = await databaseRef.get();
+
+      if (snapshot.exists) {
+        Map userData = snapshot.value as Map;
+        print("User Data: ${userData.toString()}"); // Debugging purpose
+
+        // Navigate to the home screen on success
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User data not found in the database.')),
+        );
+      }
+    } catch (e) {
+      // Handle errors (e.g., wrong password, user not found, etc.)
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Login failed: ${e.toString()}')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final TextEditingController emailController = TextEditingController();
+    final TextEditingController passwordController = TextEditingController();
+    final ValueNotifier<bool> emailError = ValueNotifier(false);
+    final ValueNotifier<bool> passwordError = ValueNotifier(false);
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Padding(
@@ -25,33 +63,43 @@ class LoginScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            TextField(
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Color(0xFFEAEEF9).withOpacity(0.73),
-                labelText: 'Email Address',
-                labelStyle: TextStyle(fontSize: 16),
-                floatingLabelBehavior: FloatingLabelBehavior.auto, // Efek floating untuk email
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(5),
-                  borderSide: BorderSide.none,
-                ),
-              ),
+            ValueListenableBuilder(
+              valueListenable: emailError,
+              builder: (context, hasError, child) {
+                return TextField(
+                  controller: emailController,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: hasError ? Colors.black : Color(0xFFEAEEF9).withOpacity(0.73),
+                    labelText: 'Email Address',
+                    labelStyle: TextStyle(fontSize: 16, color: hasError ? Colors.white : null),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(5),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                );
+              },
             ),
-            const SizedBox(height: 25), // Menambahkan jarak lebih besar antara email dan password
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Color(0xFFEAEEF9).withOpacity(0.73),
-                labelText: 'Password',
-                labelStyle: TextStyle(fontSize: 16),
-                floatingLabelBehavior: FloatingLabelBehavior.auto, // Efek floating untuk password
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(5),
-                  borderSide: BorderSide.none,
-                ),
-              ),
+            const SizedBox(height: 25),
+            ValueListenableBuilder(
+              valueListenable: passwordError,
+              builder: (context, hasError, child) {
+                return TextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: hasError ? Colors.black : Color(0xFFEAEEF9).withOpacity(0.73),
+                    labelText: 'Password',
+                    labelStyle: TextStyle(fontSize: 16, color: hasError ? Colors.white : null),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(5),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 20),
             Container(
@@ -63,7 +111,15 @@ class LoginScreen extends StatelessWidget {
               ),
               child: TextButton(
                 onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/home');
+                  final email = emailController.text.trim();
+                  final password = passwordController.text.trim();
+
+                  emailError.value = email.isEmpty;
+                  passwordError.value = password.isEmpty;
+
+                  if (!emailError.value && !passwordError.value) {
+                    _login(context, email, password);
+                  }
                 },
                 child: Text(
                   'Sign In',
