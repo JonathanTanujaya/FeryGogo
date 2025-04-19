@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'ferygogo-eb2cb.firebasestorage.app',
     measurementId: 'G-1R93SHNX5K',
   );
+
 }

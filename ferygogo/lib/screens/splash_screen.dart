@@ -1,3 +1,5 @@
+import 'package:ferry_ticket_app/screens/login_screen.dart';
+
 import 'package:flutter/material.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -19,15 +21,19 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _initializeApp() async {
-    try {
-      await Future.delayed(const Duration(seconds: 3));
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/login');
-      }
-    } catch (e) {
-      debugPrint("Splash error: $e");
+  try {
+    await Future.delayed(const Duration(seconds: 3));
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+      );
     }
+  } catch (e) {
+    debugPrint("Splash error: $e");
   }
+}
+
 
   @override
   Widget build(BuildContext context) {

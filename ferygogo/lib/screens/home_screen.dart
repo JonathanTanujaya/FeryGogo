@@ -37,7 +37,15 @@ class HomeScreen extends StatelessWidget {
                       // Logo
                       Row(
                         children: [
-                          Image.asset('assets/ferry_icon.png', width: 24),
+                          // Gunakan placeholder jika asset tidak tersedia
+                          // atau perbaiki path asset
+                          Image.asset(
+                            'assets/ferry_icon.png',
+                            width: 24,
+                            errorBuilder:
+                                (context, error, stackTrace) =>
+                                    const SizedBox(width: 24, height: 24),
+                          ),
                           const SizedBox(width: 8),
                           const Text(
                             'FeryGogo',
@@ -54,7 +62,8 @@ class HomeScreen extends StatelessWidget {
                       const CircleAvatar(
                         backgroundColor: Colors.white,
                         child: Text('AP', style: TextStyle(color: sapphire)),
-                  )],
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -96,7 +105,6 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
@@ -111,7 +119,7 @@ class HomeScreen extends StatelessWidget {
             color: Colors.black12,
             blurRadius: 6,
             offset: const Offset(2, 2),
-          )
+          ),
         ],
       ),
       child: Row(
@@ -127,12 +135,16 @@ class HomeScreen extends StatelessWidget {
                     children: [
                       const Icon(Icons.wb_sunny, color: Colors.amber),
                       const SizedBox(width: 8),
-                      const Text('Cerah', 
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                      const Text(
+                        'Cerah',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
-                  const Text('Gelombang Tenang',
-                    style: TextStyle(color: Colors.grey, fontSize: 12)),
+                  const Text(
+                    'Gelombang Tenang',
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
                 ],
               ),
             ),
@@ -187,8 +199,10 @@ class HomeScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Center(
-                child: Text('Sekali Jalan', 
-                  style: TextStyle(color: Colors.white)),
+                child: Text(
+                  'Sekali Jalan',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ),
           ),
@@ -196,8 +210,10 @@ class HomeScreen extends StatelessWidget {
             child: GestureDetector(
               onTap: () {},
               child: const Center(
-                child: Text('Pulang-Pergi', 
-                  style: TextStyle(color: Colors.grey)),
+                child: Text(
+                  'Pulang-Pergi',
+                  style: TextStyle(color: Colors.grey),
+                ),
               ),
             ),
           ),
@@ -217,16 +233,14 @@ class HomeScreen extends StatelessWidget {
             color: Colors.black12,
             blurRadius: 6,
             offset: const Offset(2, 2),
-          )
+          ),
         ],
       ),
       child: Column(
         children: [
           Row(
             children: [
-              Expanded(
-                child: _buildInputField('Dari', 'Merak'),
-              ),
+              Expanded(child: _buildInputField('Dari', 'Merak')),
               IconButton(
                 icon: Container(
                   decoration: BoxDecoration(
@@ -238,17 +252,13 @@ class HomeScreen extends StatelessWidget {
                 ),
                 onPressed: () {},
               ),
-              Expanded(
-                child: _buildInputField('Ke', 'Bakauheni'),
-              ),
+              Expanded(child: _buildInputField('Ke', 'Bakauheni')),
             ],
           ),
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(
-                child: _buildInputField('Tanggal', '16 April 2025'),
-              ),
+              Expanded(child: _buildInputField('Tanggal', '16 April 2025')),
               const SizedBox(width: 16),
               Expanded(
                 child: Container(
@@ -258,8 +268,10 @@ class HomeScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Center(
-                    child: Text('Cari Tiket',
-                      style: TextStyle(color: Colors.white)),
+                    child: Text(
+                      'Cari Tiket',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
                 ),
               ),
@@ -283,10 +295,7 @@ class HomeScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: regularColor),
           ),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(value),
-          ),
+          child: Align(alignment: Alignment.centerLeft, child: Text(value)),
         ),
       ],
     );
@@ -331,11 +340,15 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(route, 
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(
+                  route,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const Spacer(),
-                Text('Terakhir: $date',
-                  style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(
+                  'Terakhir: $date',
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
               ],
             ),
           ),
@@ -390,7 +403,13 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildScheduleItem(String name, String type, String start, String end, double progress) {
+  Widget _buildScheduleItem(
+    String name,
+    String type,
+    String start,
+    String end,
+    double progress,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -402,7 +421,7 @@ class HomeScreen extends StatelessWidget {
             color: Colors.black12,
             blurRadius: 4,
             offset: const Offset(2, 2),
-          )   
+          ),
         ],
       ),
       child: Column(
@@ -417,10 +436,13 @@ class HomeScreen extends StatelessWidget {
                   color: type == 'Reguler' ? regularColor : expressColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(type, 
+                child: Text(
+                  type,
                   style: TextStyle(
                     color: type == 'Reguler' ? sapphire : Colors.brown,
-                    fontSize: 12)),
+                    fontSize: 12,
+                  ),
+                ),
               ),
             ],
           ),
@@ -451,7 +473,8 @@ class HomeScreen extends StatelessWidget {
               '${(progress * 100).toInt()}% Tersedia',
               style: TextStyle(
                 color: progress > 0.8 ? Colors.red : sapphire,
-                fontSize: 12),
+                fontSize: 12,
+              ),
             ),
           ),
         ],
@@ -462,7 +485,8 @@ class HomeScreen extends StatelessWidget {
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Text(title,
+      child: Text(
+        title,
         style: const TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.bold,
@@ -472,66 +496,25 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomNav() {
-    return Container(
-      decoration: BoxDecoration(
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          )
-        ],
-      ),
-      child: BottomNavigationBar(
-        currentIndex: 0,
-        selectedItemColor: sapphire,
-        unselectedItemColor: Colors.grey,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_filled),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today),
-            label: 'Jadwal',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.confirmation_number),
-            label: 'Tiket',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.radar),
-            label: 'Tracking',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profil',
-          ),
-        ],
-      ),
-    );
-  }
+  
 }
 
 class DashedLinePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFFD4E4F7)
-      ..strokeWidth = 2;
-    
+    final paint =
+        Paint()
+          ..color = const Color(0xFFD4E4F7)
+          ..strokeWidth = 2;
+
     double startX = 0;
     const dashWidth = 4;
     const dashSpace = 2;
 
     while (startX < size.width) {
       canvas.drawLine(
-        Offset(startX, size.height/2),
-        Offset(startX + dashWidth, size.height/2),
+        Offset(startX, size.height / 2),
+        Offset(startX + dashWidth, size.height / 2),
         paint,
       );
       startX += dashWidth + dashSpace;
