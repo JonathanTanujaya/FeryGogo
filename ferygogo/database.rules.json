@@ -1,0 +1,40 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "schedules": {
+      ".indexOn": ["type", "departure_time"],
+      "$scheduleId": {
+       
+        ".validate": "newData.hasChildren(['name', 'type', 'departure', 'arrival', 'departure_time', 'arrival_time', 'availability'])",
+        "type": {
+          ".validate": "newData.val() === 'regular' || newData.val() === 'express'"
+        },
+        "availability": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1"
+        }
+      }
+    },
+    "trip_history": {
+      ".indexOn": ["date", "user_id"],
+      "$historyId": {
+        ".validate": "newData.hasChildren(['departure', 'arrival', 'date', 'status', 'price'])"
+      }
+    },
+    "users": {
+      "$userId": {
+        ".validate": "auth != null && auth.uid === $userId",
+        "favorite_routes": {
+          ".validate": "newData.isArray()"
+        },
+        "total_trips": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        }
+      }
+    },
+    "weather": {
+      ".validate": "newData.hasChildren(['condition', 'wave_condition'])",
+      ".read": true
+    }
+  }
+}

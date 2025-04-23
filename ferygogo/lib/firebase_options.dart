@@ -46,6 +46,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '290091360925',
     projectId: 'ferygogo-eb2cb',
     authDomain: 'ferygogo-eb2cb.firebaseapp.com',
+    databaseURL: 'https://ferygogo-eb2cb-default-rtdb.firebaseio.com',
     storageBucket: 'ferygogo-eb2cb.firebasestorage.app',
     measurementId: 'G-5V5KCJRPB8',
   );
@@ -55,6 +56,7 @@ class DefaultFirebaseOptions {
     appId: '1:290091360925:android:7066a2b406810a17c9aa74',
     messagingSenderId: '290091360925',
     projectId: 'ferygogo-eb2cb',
+    databaseURL: 'https://ferygogo-eb2cb-default-rtdb.firebaseio.com',
     storageBucket: 'ferygogo-eb2cb.firebasestorage.app',
   );
 
@@ -63,6 +65,7 @@ class DefaultFirebaseOptions {
     appId: '1:290091360925:ios:5f6b4de80006a813c9aa74',
     messagingSenderId: '290091360925',
     projectId: 'ferygogo-eb2cb',
+    databaseURL: 'https://ferygogo-eb2cb-default-rtdb.firebaseio.com',
     storageBucket: 'ferygogo-eb2cb.firebasestorage.app',
     iosBundleId: 'com.example.ferygogo',
   );
@@ -72,6 +75,7 @@ class DefaultFirebaseOptions {
     appId: '1:290091360925:ios:5f6b4de80006a813c9aa74',
     messagingSenderId: '290091360925',
     projectId: 'ferygogo-eb2cb',
+    databaseURL: 'https://ferygogo-eb2cb-default-rtdb.firebaseio.com',
     storageBucket: 'ferygogo-eb2cb.firebasestorage.app',
     iosBundleId: 'com.example.ferygogo',
   );
@@ -82,6 +86,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '290091360925',
     projectId: 'ferygogo-eb2cb',
     authDomain: 'ferygogo-eb2cb.firebaseapp.com',
+    databaseURL: 'https://ferygogo-eb2cb-default-rtdb.firebaseio.com',
     storageBucket: 'ferygogo-eb2cb.firebasestorage.app',
     measurementId: 'G-1R93SHNX5K',
   );
