@@ -4,24 +4,31 @@ import '../providers/auth_provider.dart';
 
 class AuthGuard extends StatelessWidget {
   final Widget child;
-  final String redirectRoute;
 
   const AuthGuard({
     Key? key,
     required this.child,
-    this.redirectRoute = '/login',
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
+        if (!auth.isInitialized) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
         if (!auth.isAuthenticated) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            Navigator.of(context).pushReplacementNamed(redirectRoute);
+            Navigator.of(context).pushReplacementNamed('/login');
           });
           return const SizedBox.shrink();
         }
+
         return child;
       },
     );

@@ -1,74 +1,51 @@
 import 'package:flutter/foundation.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
-class UserProfile {
-  final String id;
-  final String name;
-  final String email;
-  final String phoneNumber;
-  final String profilePicture;
-  final int totalTrips;
-  final List<String> favoriteRoutes;
-
-  UserProfile({
-    required this.id,
-    required this.name,
-    required this.email,
-    required this.phoneNumber,
-    required this.profilePicture,
-    required this.totalTrips,
-    required this.favoriteRoutes,
-  });
-}
+import 'package:firebase_database/firebase_database.dart';
+import '../models/user_profile.dart';
 
 class ProfileProvider with ChangeNotifier {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final DatabaseReference _database = FirebaseDatabase.instance.ref();
+  
   UserProfile? _userProfile;
   bool _isLoading = false;
-  final _auth = FirebaseAuth.instance;
-  
+  String? _error;
+
   UserProfile? get userProfile => _userProfile;
   bool get isLoading => _isLoading;
+  String? get error => _error;
+
+  void _setLoading(bool value) {
+    _isLoading = value;
+    notifyListeners();
+  }
+
+  void _setError(String? value) {
+    _error = value;
+    notifyListeners();
+  }
 
   Future<void> loadUserProfile() async {
-    if (_isLoading) return;
-    
-    _isLoading = true;
-    notifyListeners();
+    if (_auth.currentUser == null) return;
 
     try {
-      final user = _auth.currentUser;
-      if (user == null) throw Exception('User not authenticated');
+      _setLoading(true);
+      _setError(null);
 
-      final ref = FirebaseDatabase.instance.ref().child('users/${user.uid}');
-      final snapshot = await ref.get();
-      
-      if (snapshot.value != null) {
-        final Map<dynamic, dynamic> value = 
-            snapshot.value as Map<dynamic, dynamic>;
-        
-        List<String> favorites = [];
-        if (value['favorite_routes'] != null) {
-          favorites = (value['favorite_routes'] as List)
-              .map((e) => e.toString())
-              .toList();
-        }
+      final snapshot = await _database
+          .child('users/${_auth.currentUser!.uid}')
+          .get();
 
-        _userProfile = UserProfile(
-          id: user.uid,
-          name: value['name'] ?? '',
-          email: value['email'] ?? '',
-          phoneNumber: value['phone_number'] ?? '',
-          profilePicture: value['profile_picture'] ?? '',
-          totalTrips: value['total_trips'] ?? 0,
-          favoriteRoutes: favorites,
+      if (snapshot.exists) {
+        _userProfile = UserProfile.fromMap(
+          _auth.currentUser!.uid,
+          snapshot.value as Map<String, dynamic>,
         );
       }
-    } catch (error) {
-      debugPrint('Error loading user profile: $error');
+    } catch (e) {
+      _setError('Failed to load profile: $e');
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      _setLoading(false);
     }
   }
 
@@ -77,70 +54,30 @@ class ProfileProvider with ChangeNotifier {
     String? phoneNumber,
     String? profilePicture,
   }) async {
-    if (_isLoading || _userProfile == null) return;
-    
-    _isLoading = true;
-    notifyListeners();
+    if (_auth.currentUser == null || _userProfile == null) return;
 
     try {
-      final user = _auth.currentUser;
-      if (user == null) throw Exception('User not authenticated');
+      _setLoading(true);
+      _setError(null);
 
-      final ref = FirebaseDatabase.instance.ref().child('users/${user.uid}');
       final updates = <String, dynamic>{};
-      
       if (name != null) updates['name'] = name;
-      if (phoneNumber != null) updates['phone_number'] = phoneNumber;
-      if (profilePicture != null) updates['profile_picture'] = profilePicture;
+      if (phoneNumber != null) updates['phoneNumber'] = phoneNumber;
+      if (profilePicture != null) updates['profilePicture'] = profilePicture;
 
-      await ref.update(updates);
-      await loadUserProfile(); // Refresh profile data
-    } catch (error) {
-      debugPrint('Error updating profile: $error');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
+      await _database
+          .child('users/${_auth.currentUser!.uid}')
+          .update(updates);
 
-  Future<void> toggleFavoriteRoute(String route) async {
-    if (_isLoading || _userProfile == null) return;
-    
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      final user = _auth.currentUser;
-      if (user == null) throw Exception('User not authenticated');
-
-      final List<String> updatedFavorites = 
-          List.from(_userProfile!.favoriteRoutes);
-      
-      if (updatedFavorites.contains(route)) {
-        updatedFavorites.remove(route);
-      } else {
-        updatedFavorites.add(route);
-      }
-
-      final ref = FirebaseDatabase.instance.ref().child('users/${user.uid}');
-      await ref.update({
-        'favorite_routes': updatedFavorites,
-      });
-
-      _userProfile = UserProfile(
-        id: _userProfile!.id,
-        name: _userProfile!.name,
-        email: _userProfile!.email,
-        phoneNumber: _userProfile!.phoneNumber,
-        profilePicture: _userProfile!.profilePicture,
-        totalTrips: _userProfile!.totalTrips,
-        favoriteRoutes: updatedFavorites,
+      _userProfile = _userProfile!.copyWith(
+        name: name,
+        phoneNumber: phoneNumber,
+        profilePicture: profilePicture,
       );
-    } catch (error) {
-      debugPrint('Error toggling favorite route: $error');
+    } catch (e) {
+      _setError('Failed to update profile: $e');
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      _setLoading(false);
     }
   }
 
@@ -148,9 +85,8 @@ class ProfileProvider with ChangeNotifier {
     try {
       await _auth.signOut();
       _userProfile = null;
-      notifyListeners();
-    } catch (error) {
-      debugPrint('Error signing out: $error');
+    } catch (e) {
+      _setError('Failed to sign out: $e');
     }
   }
 }

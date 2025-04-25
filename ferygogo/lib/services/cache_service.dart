@@ -4,22 +4,25 @@ import 'package:shared_preferences/shared_preferences.dart';
 class CacheService {
   final SharedPreferences _prefs;
   static const String _timestampPrefix = 'timestamp_';
+  static const String _weatherKey = 'weather_cache';
 
   CacheService(this._prefs);
 
   // Weather caching
   Map<String, dynamic>? getWeatherInfo() {
-    final jsonString = _prefs.getString('weather_info');
-    if (jsonString == null) return null;
-    return json.decode(jsonString) as Map<String, dynamic>;
+    final String? cachedData = _prefs.getString(_weatherKey);
+    if (cachedData != null) {
+      return json.decode(cachedData) as Map<String, dynamic>;
+    }
+    return null;
   }
 
   Future<void> cacheWeatherInfo(Map<String, dynamic> weatherInfo) async {
-    await _prefs.setString('weather_info', json.encode(weatherInfo));
+    await _prefs.setString(_weatherKey, json.encode(weatherInfo));
   }
 
   Future<void> clearWeatherCache() async {
-    await _prefs.remove('weather_info');
+    await _prefs.remove(_weatherKey);
   }
 
   // Schedule caching

@@ -4,34 +4,39 @@ import 'package:firebase_auth/firebase_auth.dart';
 class ErrorHandler {
   static String getAuthErrorMessage(FirebaseAuthException error) {
     switch (error.code) {
+      case 'invalid-email':
+        return 'Format email tidak valid';
+      case 'user-disabled':
+        return 'Akun ini telah dinonaktifkan';
       case 'user-not-found':
         return 'Email tidak terdaftar';
       case 'wrong-password':
         return 'Password salah';
-      case 'invalid-email':
-        return 'Format email tidak valid';
       case 'email-already-in-use':
         return 'Email sudah terdaftar';
-      case 'weak-password':
-        return 'Password terlalu lemah';
       case 'operation-not-allowed':
         return 'Operasi tidak diizinkan';
-      case 'user-disabled':
-        return 'Akun telah dinonaktifkan';
-      case 'too-many-requests':
-        return 'Terlalu banyak permintaan. Silakan coba lagi nanti';
+      case 'weak-password':
+        return 'Password terlalu lemah';
       case 'network-request-failed':
         return 'Koneksi internet bermasalah';
+      case 'too-many-requests':
+        return 'Terlalu banyak percobaan. Silakan coba lagi nanti';
       default:
-        return 'Terjadi kesalahan. Silakan coba lagi';
+        return error.message ?? 'Terjadi kesalahan. Silakan coba lagi';
     }
   }
 
-  static String getDatabaseErrorMessage(dynamic error) {
-    if (error.toString().contains('permission-denied')) {
-      return 'Anda tidak memiliki izin untuk melakukan operasi ini';
-    } else if (error.toString().contains('network-request-failed')) {
-      return 'Koneksi internet bermasalah';
+  static String getDatabaseErrorMessage(Object error) {
+    if (error is FirebaseException) {
+      switch (error.code) {
+        case 'permission-denied':
+          return 'Anda tidak memiliki izin untuk melakukan operasi ini';
+        case 'unavailable':
+          return 'Layanan tidak tersedia. Periksa koneksi internet Anda';
+        default:
+          return error.message ?? 'Terjadi kesalahan database';
+      }
     }
     return 'Terjadi kesalahan. Silakan coba lagi';
   }
@@ -43,9 +48,6 @@ class ErrorHandler {
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
         action: SnackBarAction(
           label: 'OK',
           textColor: Colors.white,
@@ -64,9 +66,6 @@ class ErrorHandler {
         backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
         action: SnackBarAction(
           label: 'OK',
           textColor: Colors.white,

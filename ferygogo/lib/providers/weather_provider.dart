@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
-import 'package:firebase_database/firebase_database.dart';
-import '../services/error_handler.dart';
 import '../services/cache_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class WeatherInfo {
   final String condition;
@@ -50,12 +50,12 @@ class WeatherInfo {
 }
 
 class WeatherProvider with ChangeNotifier {
-  final DatabaseReference _database = FirebaseDatabase.instance.ref();
   late final CacheService _cacheService;
   WeatherInfo? _weatherInfo;
   bool _isLoading = false;
   String? _error;
   bool _initialized = false;
+  Map<String, dynamic>? _weatherData;
 
   WeatherProvider() {
     _initCache();
@@ -82,32 +82,53 @@ class WeatherProvider with ChangeNotifier {
   WeatherInfo? get weatherInfo => _weatherInfo;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  Map<String, dynamic>? get weatherData => _weatherData;
+
+  void _setLoading(bool value) {
+    _isLoading = value;
+    notifyListeners();
+  }
+
+  void _setError(String? value) {
+    _error = value;
+    notifyListeners();
+  }
 
   Future<void> loadWeatherInfo() async {
-    if (_isLoading) return;
-
-    bool shouldNotify = false;
     try {
-      _isLoading = true;
-      _error = null;
-      shouldNotify = true;
+      _setLoading(true);
+      _setError(null);
 
-      final snapshot = await _database.child('weather').get();
-      
-      if (snapshot.value != null) {
-        final data = Map<String, dynamic>.from(snapshot.value as Map);
-        _weatherInfo = WeatherInfo.fromMap(data);
+      // Example coordinates for Jakarta
+      const lat = -6.2088;
+      const lon = 106.8456;
+      const apiKey = 'fa46cb5b001e426dbb6124635252504';
+      final url = 'http://api.weatherapi.com/v1/current.json?key=$apiKey&q=$lat,$lon&aqi=no';
+
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final current = data['current'];
         
-        // Cache the weather info
+        _weatherInfo = WeatherInfo(
+          condition: current['condition']['text'],
+          waveCondition: 'Normal', // This would need a separate marine API
+          temperature: current['temp_c'].toDouble(),
+          windSpeed: current['wind_kph'].toDouble(),
+          humidity: current['humidity'].toDouble(),
+          timestamp: DateTime.now(),
+        );
+        
         await _cacheService.cacheWeatherInfo(_weatherInfo!.toMap());
+        notifyListeners();
+      } else {
+        throw Exception('Failed to load weather data');
       }
     } catch (e) {
-      _error = ErrorHandler.getDatabaseErrorMessage(e);
+      _setError('Gagal memuat informasi cuaca: $e');
     } finally {
-      _isLoading = false;
-      if (shouldNotify) {
-        notifyListeners();
-      }
+      _setLoading(false);
     }
   }
 

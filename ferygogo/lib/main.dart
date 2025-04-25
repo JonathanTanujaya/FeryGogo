@@ -1,64 +1,117 @@
-import 'package:ferry_ticket_app/providers/auth_provider.dart';
-import 'package:ferry_ticket_app/providers/schedule_provider.dart';
-import 'package:ferry_ticket_app/providers/weather_provider.dart';
-import 'package:ferry_ticket_app/screens/booking_screen.dart';
-import 'package:ferry_ticket_app/screens/history_screen.dart';
-import 'package:ferry_ticket_app/screens/home_screen.dart';
-import 'package:ferry_ticket_app/screens/profile_screen.dart';
-import 'package:ferry_ticket_app/screens/splash_screen.dart';
-import 'package:ferry_ticket_app/utils/auth_guard.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
-import 'package:ferry_ticket_app/screens/Login/login_screen.dart';
-import 'package:ferry_ticket_app/screens/SignUp/signup_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
-import 'package:ferry_ticket_app/providers/booking_provider.dart';
-import 'package:ferry_ticket_app/providers/history_provider.dart';
-import 'package:ferry_ticket_app/providers/profile_provider.dart';
+import 'firebase_options.dart';
+import 'providers/auth_provider.dart';
+import 'providers/booking_provider.dart';
+import 'providers/history_provider.dart';
+import 'providers/profile_provider.dart';
+import 'providers/schedule_provider.dart';
+import 'providers/theme_provider.dart';
+import 'providers/weather_provider.dart';
+import 'screens/splash_screen.dart';
+import 'screens/Login/login_screen.dart';
+import 'screens/SignUp/signup_screen.dart';
+import 'screens/home_screen.dart';
+import 'screens/booking_screen.dart';
+import 'screens/history_screen.dart';
+import 'screens/profile_screen.dart';
+import 'utils/auth_guard.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  runApp(const MyApp());
+Future<void> main() async {
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    print('Flutter binding initialized');
+    
+    // Initialize Firebase first
+    print('Initializing Firebase...');
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('Firebase initialized successfully');
+    
+    // Then get SharedPreferences instance
+    print('Getting SharedPreferences...');
+    final prefs = await SharedPreferences.getInstance();
+    print('SharedPreferences initialized');
+    
+    runApp(MyApp(prefs: prefs));
+  } catch (e, stackTrace) {
+    print('Error during initialization: $e');
+    print('Stack trace: $stackTrace');
+    rethrow;
+  }
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final SharedPreferences prefs;
+  
+  const MyApp({super.key, required this.prefs});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(),
+          lazy: false, // Initialize immediately
+        ),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(create: (_) => BookingProvider()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
         ChangeNotifierProvider(create: (_) => WeatherProvider()),
         ChangeNotifierProvider(create: (_) => ScheduleProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider(prefs)),
       ],
-      child: Consumer<AuthProvider>(
-        builder: (context, auth, child) {
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
             title: 'FeryGogo',
+            themeMode: themeProvider.themeMode,
             theme: ThemeData(
               primarySwatch: Colors.blue,
               fontFamily: 'Poppins',
               useMaterial3: true,
+              brightness: Brightness.light,
+              scaffoldBackgroundColor: Colors.white,
               colorScheme: ColorScheme.fromSeed(
                 seedColor: const Color(0xFF0F52BA),
                 primary: const Color(0xFF0F52BA),
               ),
             ),
-            // home: const HomeScreen(),
+            darkTheme: ThemeData(
+              primarySwatch: Colors.blue,
+              fontFamily: 'Poppins',
+              useMaterial3: true,
+              brightness: Brightness.dark,
+              scaffoldBackgroundColor: const Color(0xFF121212),
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color(0xFF0F52BA),
+                primary: const Color(0xFF0F52BA),
+                brightness: Brightness.dark,
+              ),
+            ),
             home: const SplashScreen(),
-            routes: {
-              '/login': (context) => const LoginScreen(),
-              '/signup': (context) => const SignUpScreen(),
-              '/home': (context) => const AuthGuard(child: MainLayout()),
+            onGenerateRoute: (settings) {
+              // Add logging for route navigation
+              print('Navigating to ${settings.name}');
+              
+              switch (settings.name) {
+                case '/':
+                  return MaterialPageRoute(builder: (_) => const SplashScreen());
+                case '/login':
+                  return MaterialPageRoute(builder: (_) => const LoginScreen());
+                case '/signup':
+                  return MaterialPageRoute(builder: (_) => const SignUpScreen());
+                case '/home':
+                  return MaterialPageRoute(
+                    builder: (_) => const AuthGuard(child: MainLayout()),
+                  );
+                default:
+                  return MaterialPageRoute(builder: (_) => const SplashScreen());
+              }
             },
           );
         },
@@ -77,12 +130,11 @@ class MainLayout extends StatefulWidget {
 class _MainLayoutState extends State<MainLayout> with AutomaticKeepAliveClientMixin {
   int _currentIndex = 0;
 
-  // Using const constructor for better performance
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    BookingScreen(),
-    HistoryScreen(),
-    ProfileScreen(),
+  final List<Widget> _screens = [
+    const HomeScreen(),
+    const BookingScreen(),
+    const HistoryScreen(),
+    const ProfileScreen(),
   ];
 
   void _onTabTapped(int index) {
@@ -110,7 +162,6 @@ class _MainLayoutState extends State<MainLayout> with AutomaticKeepAliveClientMi
       },
       child: Scaffold(
         body: SafeArea(
-          // Using IndexedStack to preserve state of all screens
           child: IndexedStack(
             index: _currentIndex,
             children: _screens,

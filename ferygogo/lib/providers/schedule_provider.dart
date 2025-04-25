@@ -1,145 +1,134 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_database/firebase_database.dart';
 import '../services/cache_service.dart';
-import '../services/error_handler.dart';
-import '../utils/pagination_controller.dart';
+import '../models/schedule.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-class Schedule {
-  final String id;
-  final String name;
-  final String type;
-  final String departure;
-  final String arrival;
-  final DateTime departureTime;
-  final DateTime arrivalTime;
-  final double price;
-  final int availability;
-
-  Schedule({
-    required this.id,
-    required this.name,
-    required this.type,
-    required this.departure,
-    required this.arrival,
-    required this.departureTime,
-    required this.arrivalTime,
-    required this.price,
-    required this.availability,
-  });
-
-  factory Schedule.fromMap(String id, Map<String, dynamic> map) {
-    return Schedule(
-      id: id,
-      name: map['name'] ?? '',
-      type: map['type'] ?? 'regular',
-      departure: map['departure'] ?? '',
-      arrival: map['arrival'] ?? '',
-      departureTime: DateTime.parse(map['departure_time'] ?? DateTime.now().toIso8601String()),
-      arrivalTime: DateTime.parse(map['arrival_time'] ?? DateTime.now().toIso8601String()),
-      price: (map['price'] ?? 0.0).toDouble(),
-      availability: map['availability'] ?? 0,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'name': name,
-      'type': type,
-      'departure': departure,
-      'arrival': arrival,
-      'departure_time': departureTime.toIso8601String(),
-      'arrival_time': arrivalTime.toIso8601String(),
-      'price': price,
-      'availability': availability,
-    };
-  }
-}
 
 class ScheduleProvider with ChangeNotifier {
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
   late final CacheService _cacheService;
-  late final PaginationController<Schedule> _paginationController;
-  String _currentType = 'all';
+  List<Schedule> _schedules = [];
+  bool _isLoading = false;
+  String? _error;
+  bool _initialized = false;
+  String? _lastKey;
+  static const int _pageSize = 10;
+  bool _hasMore = true;
 
   ScheduleProvider() {
     _initCache();
-    _paginationController = PaginationController<Schedule>(
-      fetchData: _fetchSchedules,
-      limit: 10,
-    );
   }
 
   Future<void> _initCache() async {
+    if (_initialized) return;
+    
     final prefs = await SharedPreferences.getInstance();
     _cacheService = CacheService(prefs);
-  }
+    _initialized = true;
 
-  PaginationController<Schedule> get paginationController => _paginationController;
-
-  Future<List<Schedule>> _fetchSchedules(int page, int limit) async {
-    try {
-      Query query = _database.child('schedules')
-          .orderByChild('departure_time')
-          .startAfter(DateTime.now().toIso8601String());
-      
-      if (_currentType != 'all') {
-        query = query.orderByChild('type').equalTo(_currentType);
-      }
-      
-      query = query.limitToFirst(limit);
-
-      // Try to get from cache first
-      final cacheKey = 'schedules_${_currentType}_${page}_$limit';
-      final cachedData = _cacheService.getSchedules(cacheKey);
-      if (cachedData != null) {
-        final schedules = (cachedData as List)
-            .map((item) => Schedule.fromMap(item['id'], item))
-            .toList();
-        
-        // Check if cache is still valid (less than 5 minutes old)
-        final cacheTimestamp = await _cacheService.getCacheTimestamp(cacheKey);
-        if (cacheTimestamp != null &&
-            DateTime.now().difference(cacheTimestamp).inMinutes < 5) {
-          return schedules;
-        }
-      }
-
-      final snapshot = await query.get();
-      if (!snapshot.exists) return [];
-
-      final data = Map<String, dynamic>.from(snapshot.value as Map);
-      final schedules = data.entries
-          .map((e) => Schedule.fromMap(e.key, e.value as Map<String, dynamic>))
+    final cachedSchedules = _cacheService.getSchedules('schedules');
+    if (cachedSchedules != null) {
+      _schedules = cachedSchedules
+          .map((e) => Schedule.fromMap(e['id'], e))
           .toList();
-
-      // Cache the results
-      await _cacheService.cacheSchedules(cacheKey, schedules.map((s) => s.toMap()).toList());
-      await _cacheService.setCacheTimestamp(cacheKey);
-
-      return schedules;
-    } catch (e) {
-      throw ErrorHandler.getDatabaseErrorMessage(e);
+      notifyListeners();
     }
   }
 
-  Future<void> loadSchedules({String type = 'all'}) async {
-    _currentType = type;
-    await _paginationController.loadInitial();
+  List<Schedule> get schedules => _schedules;
+  bool get isLoading => _isLoading;
+  String? get error => _error;
+
+  void _setLoading(bool value) {
+    _isLoading = value;
+    notifyListeners();
+  }
+
+  void _setError(String? value) {
+    _error = value;
+    notifyListeners();
+  }
+
+  Future<void> loadSchedules({String type = 'regular'}) async {
+    if (!_initialized) await _initCache();
+
+    try {
+      _setLoading(true);
+      _setError(null);
+      _hasMore = true;
+      _lastKey = null;
+
+      final query = _database
+          .child('schedules')
+          .orderByChild('type')
+          .equalTo(type)
+          .limitToFirst(_pageSize);
+
+      final snapshot = await query.get();
+      if (!snapshot.exists) {
+        _schedules = [];
+        return;
+      }
+
+      final data = snapshot.value as Map<dynamic, dynamic>;
+      _schedules = data.entries
+          .map((e) => Schedule.fromMap(e.key as String, e.value as Map<dynamic, dynamic>))
+          .toList();
+
+      if (_schedules.isNotEmpty) {
+        _lastKey = _schedules.last.id;
+        await _cacheService.cacheSchedules(
+          'schedules',
+          _schedules.map((s) => {...s.toMap(), 'id': s.id}).toList(),
+        );
+      }
+    } catch (e) {
+      _setError('Gagal memuat jadwal: $e');
+    } finally {
+      _setLoading(false);
+    }
   }
 
   Future<void> loadMore() async {
-    await _paginationController.loadMore();
+    if (_isLoading || !_hasMore) return;
+
+    try {
+      _setLoading(true);
+      _setError(null);
+
+      final query = _database
+          .child('schedules')
+          .orderByKey()
+          .startAfter(_lastKey)
+          .limitToFirst(_pageSize);
+
+      final snapshot = await query.get();
+      if (!snapshot.exists) {
+        _hasMore = false;
+        return;
+      }
+
+      final data = snapshot.value as Map<dynamic, dynamic>;
+      final newSchedules = data.entries
+          .map((e) => Schedule.fromMap(e.key as String, e.value as Map<dynamic, dynamic>))
+          .toList();
+
+      if (newSchedules.isNotEmpty) {
+        _schedules.addAll(newSchedules);
+        _lastKey = newSchedules.last.id;
+        notifyListeners();
+      } else {
+        _hasMore = false;
+      }
+    } catch (e) {
+      _setError('Gagal memuat jadwal tambahan: $e');
+    } finally {
+      _setLoading(false);
+    }
   }
 
   Future<void> refreshSchedules() async {
     await _cacheService.clearScheduleCache();
-    await loadSchedules(type: _currentType);
-  }
-
-  @override
-  void dispose() {
-    _paginationController.dispose();
-    super.dispose();
+    await loadSchedules();
   }
 }

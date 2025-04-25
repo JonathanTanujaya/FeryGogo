@@ -120,10 +120,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   // Logo dan judul
                   Hero(
                     tag: 'app_logo',
-                    child: Image.asset(
-                      'assets/ferry_icon.png',
-                      height: 100,
-                      width: 100,
+                    child: Icon(
+                      Icons.directions_ferry,
+                      size: 100,
+                      color: Color(0xFF0F52BA),
                     ),
                   ),
                   const SizedBox(height: 24),

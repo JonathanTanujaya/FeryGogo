@@ -1,126 +1,108 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_database/firebase_database.dart';
-
-class TripHistory {
-  final String id;
-  final String departure;
-  final String arrival;
-  final DateTime date;
-  final String status;
-  final double price;
-
-  TripHistory({
-    required this.id,
-    required this.departure,
-    required this.arrival,
-    required this.date,
-    required this.status,
-    required this.price,
-  });
-}
+import 'package:firebase_auth/firebase_auth.dart';
+import '../models/booking.dart';
 
 class HistoryProvider with ChangeNotifier {
-  final List<TripHistory> _history = [];
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final DatabaseReference _database = FirebaseDatabase.instance.ref();
+  
+  List<Booking> _bookings = [];
   bool _isLoading = false;
+  String? _error;
   String? _lastKey;
-  static const int _pageSize = 15;
+  static const int _pageSize = 10;
+  bool _hasMore = true;
 
-  List<TripHistory> get history => [..._history];
+  List<Booking> get bookings => _bookings;
   bool get isLoading => _isLoading;
+  String? get error => _error;
 
-  Future<void> loadHistory({bool refresh = false}) async {
-    if (_isLoading) return;
-    
-    if (refresh) {
-      _history.clear();
-      _lastKey = null;
-      notifyListeners();
-    }
-
-    _isLoading = true;
-    notifyListeners();
+  Future<void> loadHistory() async {
+    if (_auth.currentUser == null) return;
 
     try {
-      final ref = FirebaseDatabase.instance.ref().child('trip_history');
-      Query query = ref.orderByChild('date');
-      
-      if (_lastKey != null) {
-        query = query.endBefore(_lastKey).limitToLast(_pageSize);
-      } else {
-        query = query.limitToLast(_pageSize);
-      }
+      _setLoading(true);
+      _setError(null);
+      _hasMore = true;
+      _lastKey = null;
+
+      final query = _database
+          .child('bookings')
+          .child(_auth.currentUser!.uid)
+          .orderByKey()
+          .limitToLast(_pageSize);
 
       final snapshot = await query.get();
-      if (snapshot.value != null) {
-        final Map<dynamic, dynamic> values = 
-            snapshot.value as Map<dynamic, dynamic>;
-        
-        final sortedKeys = values.keys.toList()
-          ..sort((a, b) => values[b]['date'].compareTo(values[a]['date']));
-
-        for (var key in sortedKeys) {
-          final value = values[key];
-          _lastKey = key.toString();
-          final trip = TripHistory(
-            id: key.toString(),
-            departure: value['departure'] ?? '',
-            arrival: value['arrival'] ?? '',
-            date: DateTime.parse(value['date'] ?? ''),
-            status: value['status'] ?? 'completed',
-            price: (value['price'] ?? 0.0).toDouble(),
-          );
-          _history.add(trip);
-        }
+      if (!snapshot.exists) {
+        _bookings = [];
+        return;
       }
-    } catch (error) {
-      debugPrint('Error loading history: $error');
+
+      final data = snapshot.value as Map<dynamic, dynamic>;
+      _bookings = data.entries
+          .map((e) => Booking.fromMap(e.key as String, e.value as Map<dynamic, dynamic>))
+          .toList()
+          .reversed
+          .toList();
+
+      if (_bookings.isNotEmpty) {
+        _lastKey = _bookings.first.id;
+      }
+    } catch (e) {
+      _setError('Gagal memuat riwayat: $e');
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      _setLoading(false);
     }
   }
 
-  Future<void> filterByDateRange(DateTime start, DateTime end) async {
-    if (_isLoading) return;
-    
-    _isLoading = true;
-    notifyListeners();
+  Future<void> loadMore() async {
+    if (_auth.currentUser == null || _isLoading || !_hasMore) return;
 
     try {
-      final ref = FirebaseDatabase.instance.ref().child('trip_history');
-      final snapshot = await ref
-          .orderByChild('date')
-          .startAt(start.toIso8601String())
-          .endAt(end.toIso8601String())
-          .get();
+      _setLoading(true);
+      _setError(null);
 
-      _history.clear();
-      
-      if (snapshot.value != null) {
-        final Map<dynamic, dynamic> values = 
-            snapshot.value as Map<dynamic, dynamic>;
-        
-        final sortedKeys = values.keys.toList()
-          ..sort((a, b) => values[b]['date'].compareTo(values[a]['date']));
+      final query = _database
+          .child('bookings')
+          .child(_auth.currentUser!.uid)
+          .orderByKey()
+          .endBefore(_lastKey)
+          .limitToLast(_pageSize);
 
-        for (var key in sortedKeys) {
-          final value = values[key];
-          final trip = TripHistory(
-            id: key.toString(),
-            departure: value['departure'] ?? '',
-            arrival: value['arrival'] ?? '',
-            date: DateTime.parse(value['date'] ?? ''),
-            status: value['status'] ?? 'completed',
-            price: (value['price'] ?? 0.0).toDouble(),
-          );
-          _history.add(trip);
-        }
+      final snapshot = await query.get();
+      if (!snapshot.exists) {
+        _hasMore = false;
+        return;
       }
-    } catch (error) {
-      debugPrint('Error filtering history: $error');
+
+      final data = snapshot.value as Map<dynamic, dynamic>;
+      final newBookings = data.entries
+          .map((e) => Booking.fromMap(e.key as String, e.value as Map<dynamic, dynamic>))
+          .toList()
+          .reversed
+          .toList();
+
+      if (newBookings.isNotEmpty) {
+        _bookings.addAll(newBookings);
+        _lastKey = newBookings.first.id;
+      } else {
+        _hasMore = false;
+      }
+    } catch (e) {
+      _setError('Gagal memuat riwayat tambahan: $e');
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      _setLoading(false);
     }
+  }
+
+  void _setLoading(bool value) {
+    _isLoading = value;
+    notifyListeners();
+  }
+
+  void _setError(String? value) {
+    _error = value;
+    notifyListeners();
   }
 }

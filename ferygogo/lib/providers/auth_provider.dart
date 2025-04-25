@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -8,11 +10,18 @@ class AuthProvider with ChangeNotifier {
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
   bool _isLoading = false;
   String? _error;
+  bool _initialized = false;
+  StreamSubscription<User?>? _authStateSubscription;
+
+  AuthProvider() {
+    init();
+  }
 
   bool get isLoading => _isLoading;
   String? get error => _error;
   User? get currentUser => _auth.currentUser;
   bool get isAuthenticated => _auth.currentUser != null;
+  bool get isInitialized => _initialized;
 
   void _setLoading(bool value) {
     _isLoading = value;
@@ -21,6 +30,20 @@ class AuthProvider with ChangeNotifier {
 
   void _setError(String? value) {
     _error = value;
+    notifyListeners();
+  }
+
+  Future<void> checkAuthState() async {
+    if (!_initialized) {
+      int retry = 0;
+      while (!_initialized && retry < 20) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        retry++;
+      }
+      if (!_initialized) {
+        throw Exception('Failed to initialize authentication state');
+      }
+    }
     notifyListeners();
   }
 
@@ -51,13 +74,11 @@ class AuthProvider with ChangeNotifier {
       _setLoading(true);
       _setError(null);
 
-      // Create auth user
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      // Create user profile in database
       await _database.child('users/${userCredential.user!.uid}').set({
         'name': name,
         'email': email,
@@ -110,10 +131,19 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // Listen to auth state changes
   void init() {
-    _auth.authStateChanges().listen((User? user) {
+    _authStateSubscription = _auth.authStateChanges().listen((User? user) {
+      _initialized = true;
       notifyListeners();
+    }, onError: (error) {
+      _setError('Error initializing auth: $error');
+      _initialized = true;
     });
+  }
+
+  @override
+  void dispose() {
+    _authStateSubscription?.cancel();
+    super.dispose();
   }
 }

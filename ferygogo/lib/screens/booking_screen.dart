@@ -1,3 +1,4 @@
+import 'package:ferry_ticket_app/models/booking.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/booking_provider.dart';
@@ -43,7 +44,7 @@ class _BookingScreenState extends State<BookingScreen> {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () {
       if (query.isEmpty) {
-        context.read<BookingProvider>().loadBookings(refresh: true);
+        context.read<BookingProvider>().loadBookings();
       } else {
         context.read<BookingProvider>().searchBookings(query);
       }
@@ -62,7 +63,7 @@ class _BookingScreenState extends State<BookingScreen> {
         elevation: 0,
       ),
       body: RefreshIndicator(
-        onRefresh: () => context.read<BookingProvider>().loadBookings(refresh: true),
+        onRefresh: () => context.read<BookingProvider>().loadBookings(),
         child: CustomScrollView(
           controller: _scrollController,
           slivers: [
@@ -216,14 +217,7 @@ class _BookingCard extends StatelessWidget {
                     const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
                     const SizedBox(width: 8),
                     Text(
-                      '${booking.date.day}/${booking.date.month}/${booking.date.year}',
-                      style: const TextStyle(color: Colors.grey),
-                    ),
-                    const SizedBox(width: 16),
-                    const Icon(Icons.access_time, size: 16, color: Colors.grey),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${booking.date.hour}:${booking.date.minute.toString().padLeft(2, '0')}',
+                      booking.date,
                       style: const TextStyle(color: Colors.grey),
                     ),
                   ],
@@ -236,7 +230,7 @@ class _BookingCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            booking.departure,
+                            booking.departureTime,
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           const Text(
@@ -259,7 +253,7 @@ class _BookingCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            booking.arrival,
+                            booking.arrivalTime,
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           const Text(
