@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/user_profile.dart';
 import '../providers/profile_provider.dart';
 import '../providers/auth_provider.dart';
+import 'package:intl/intl.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -12,18 +13,38 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  bool _isLoading = true;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ProfileProvider>().loadUserProfile();
-    });
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      await context.read<ProfileProvider>().loadUserProfile();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
   }
 
   void _signOut() async {
-    await context.read<AuthProvider>().signOut();
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, '/login');
+    try {
+      await context.read<AuthProvider>().signOut();
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/login');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error signing out: $e')),
+        );
+      }
     }
   }
 
@@ -47,94 +68,102 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-      body: Consumer<ProfileProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
+      body: RefreshIndicator(
+        onRefresh: _loadProfile,
+        child: Consumer<ProfileProvider>(
+          builder: (context, provider, child) {
+            if (provider.isLoading) {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            }
 
-          if (provider.error != null) {
-            return Center(
+            if (provider.error != null) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      provider.error!,
+                      style: const TextStyle(color: Colors.red),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _loadProfile,
+                      child: const Text('Coba Lagi'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            final profile = provider.userProfile;
+            if (profile == null) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('Profil tidak ditemukan'),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _loadProfile,
+                      child: const Text('Muat Ulang'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    provider.error!,
-                    style: const TextStyle(color: Colors.red),
-                    textAlign: TextAlign.center,
-                  ),
+                  _buildProfileHeader(profile),
+                  const SizedBox(height: 24),
+                  _buildAccountInfo(profile),
                   const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => provider.loadUserProfile(),
-                    child: const Text('Coba Lagi'),
-                  ),
+                  _buildPersonalInfo(profile),
                 ],
               ),
             );
-          }
-
-          final profile = provider.userProfile;
-          if (profile == null) {
-            return const Center(
-              child: Text('Profil tidak ditemukan'),
-            );
-          }
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                _buildProfileHeader(profile),
-                const SizedBox(height: 24),
-                _buildInfoCard(profile),
-                const SizedBox(height: 24),
-                _buildStatsCard(profile),
-              ],
-            ),
-          );
-        },
+          },
+        ),
       ),
     );
   }
 
   Widget _buildProfileHeader(UserProfile profile) {
-    return Column(
-      children: [
-        CircleAvatar(
-          radius: 50,
-          backgroundImage: profile.profilePicture.isNotEmpty 
-            ? NetworkImage(profile.profilePicture)
-            : null,
-          child: profile.profilePicture.isEmpty
-            ? Text(
-                profile.name[0].toUpperCase(),
-                style: const TextStyle(fontSize: 32),
-              )
-            : null,
-        ),
-        const SizedBox(height: 16),
-        Text(
-          profile.name,
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
+    return Center(
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 50,
+            backgroundImage: profile.profilePicture.isNotEmpty 
+              ? NetworkImage(profile.profilePicture)
+              : null,
+            child: profile.profilePicture.isEmpty
+              ? Text(
+                  profile.name[0].toUpperCase(),
+                  style: const TextStyle(fontSize: 32),
+                )
+              : null,
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          profile.email,
-          style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 16,
+          const SizedBox(height: 16),
+          Text(
+            profile.name,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  Widget _buildInfoCard(UserProfile profile) {
+  Widget _buildAccountInfo(UserProfile profile) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -146,13 +175,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Informasi Kontak',
+              'Informasi Akun',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 16),
+            _buildInfoRow(
+              Icons.email,
+              'Email',
+              profile.email,
+            ),
+            const Divider(height: 24),
             _buildInfoRow(
               Icons.phone,
               'Nomor Telepon',
@@ -160,19 +195,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ? profile.phoneNumber 
                 : 'Belum diatur',
             ),
-            const Divider(height: 24),
-            _buildInfoRow(
-              Icons.calendar_today,
-              'Bergabung Sejak',
-              '${profile.createdAt.day}/${profile.createdAt.month}/${profile.createdAt.year}',
-            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatsCard(UserProfile profile) {
+  Widget _buildPersonalInfo(UserProfile profile) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -184,27 +213,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Statistik',
+              'Informasi Pribadi',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatItem(
-                  'Total Perjalanan',
-                  '${profile.totalTrips}',
-                  Icons.directions_ferry,
-                ),
-                _buildStatItem(
-                  'Rute Favorit',
-                  '${profile.favoriteRoutes.length}',
-                  Icons.favorite,
-                ),
-              ],
+            _buildInfoRow(
+              Icons.person,
+              'Nama Lengkap',
+              profile.name,
+            ),
+            const Divider(height: 24),
+            _buildInfoRow(
+              Icons.people,
+              'Jenis Kelamin',
+              profile.gender.isNotEmpty ? profile.gender : 'Belum diatur',
+            ),
+            const Divider(height: 24),
+            _buildInfoRow(
+              Icons.cake,
+              'Tanggal Lahir',
+              profile.birthDate != null 
+                ? DateFormat('dd MMMM yyyy').format(profile.birthDate!)
+                : 'Belum diatur',
+            ),
+            const Divider(height: 24),
+            _buildInfoRow(
+              Icons.badge,
+              'Jenis Identitas',
+              profile.identityType.isNotEmpty ? profile.identityType : 'Belum diatur',
+            ),
+            const Divider(height: 24),
+            _buildInfoRow(
+              Icons.credit_card,
+              'Nomor Identitas',
+              profile.identityNumber.isNotEmpty ? profile.identityNumber : 'Belum diatur',
             ),
           ],
         ),
@@ -217,48 +262,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         Icon(icon, color: Colors.grey, size: 20),
         const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 12,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontSize: 12,
+                ),
               ),
-            ),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 16),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatItem(String label, String value, IconData icon) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          color: const Color(0xFF0F52BA),
-          size: 32,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF0F52BA),
-          ),
-        ),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 14,
+              Text(
+                value,
+                style: const TextStyle(fontSize: 16),
+              ),
+            ],
           ),
         ),
       ],

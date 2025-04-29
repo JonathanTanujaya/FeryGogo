@@ -36,14 +36,31 @@ class ProfileProvider with ChangeNotifier {
           .child('users/${_auth.currentUser!.uid}')
           .get();
 
-      if (snapshot.exists) {
+      if (snapshot.exists && snapshot.value != null) {
+        final data = Map<String, dynamic>.from(snapshot.value as Map);
         _userProfile = UserProfile.fromMap(
           _auth.currentUser!.uid,
-          snapshot.value as Map<String, dynamic>,
+          data,
         );
+        notifyListeners();
+      } else {
+        // Jika profil belum ada, buat profil baru dengan data default
+        final newProfile = UserProfile(
+          id: _auth.currentUser!.uid,
+          name: _auth.currentUser?.displayName ?? '',
+          email: _auth.currentUser?.email ?? '',
+        );
+        
+        await _database
+          .child('users/${_auth.currentUser!.uid}')
+          .set(newProfile.toMap());
+          
+        _userProfile = newProfile;
+        notifyListeners();
       }
     } catch (e) {
-      _setError('Failed to load profile: $e');
+      print('Error loading profile: $e'); // Debug print
+      _setError('Gagal memuat profil: $e');
     } finally {
       _setLoading(false);
     }
