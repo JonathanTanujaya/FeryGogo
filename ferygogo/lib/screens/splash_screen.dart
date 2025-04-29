@@ -11,26 +11,38 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
+  late Animation<double> _boatSlide;
+  late Animation<double> _waveFade;
+  late Animation<Color?> _bgColor;
   Timer? _timeoutTimer;
 
   @override
   void initState() {
     super.initState();
+
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 1500),
       vsync: this,
+      duration: Duration(seconds: 3),
     );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeIn,
-      ),
-    );
+    _bgColor = ColorTween(
+      begin: Color(0xFF00008B), // deep blue
+      end: Colors.white,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
+    _boatSlide = Tween<double>(
+      begin: -100, // start above screen center
+      end: 0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Interval(0.0, 0.5)));
+
+    _waveFade = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Interval(0.5, 1.0)));
+
+    _controller.forward();
     _initializeApp();
   }
 
@@ -84,42 +96,55 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF121212) : Colors.white,
-        ),
-        child: Center(
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (_, child) {
+        return Scaffold(
+          backgroundColor: _bgColor.value,
+          body: Center(
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                Text(
-                  'FeryGogo',
-                  style: TextStyle(
-                    fontSize: 42,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF0F52BA),
-                    fontFamily: 'Poppins',
-                    shadows: isDark ? [
-                      const BoxShadow(
-                        color: Color(0xFF0F52BA),
-                        blurRadius: 20,
-                        spreadRadius: -5,
-                      )
-                    ] : null,
+                // Boat animation
+                Transform.translate(
+                  offset: Offset(0, _boatSlide.value),
+                  child: Image.asset(
+                    'assets/boat.png', // Gambar perahu
+                    width: 100,
                   ),
                 ),
-                const SizedBox(height: 24),
-                const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0F52BA)),
+                // Waves animation
+                Positioned(
+                  bottom: 200,
+                  child: Opacity(
+                    opacity: _waveFade.value,
+                    child: Image.asset(
+                      'assets/waves.png', // Gambar ombak
+                      width: 150,
+                    ),
+                  ),
+                ),
+                // Optional: Loading indicator (untuk saat aplikasi sedang melakukan cek)
+                Positioned(
+                  bottom: 80,
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0F52BA)),
+                  ),
                 ),
               ],
             ),
           ),
-        ),
-      ),
+        );
+      },
+    );
+  }
+}
+
+class NextPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(child: Text('Halaman Selanjutnya')),
     );
   }
 }
