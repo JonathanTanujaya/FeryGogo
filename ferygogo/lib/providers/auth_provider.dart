@@ -52,10 +52,30 @@ class AuthProvider with ChangeNotifier {
       _setLoading(true);
       _setError(null);
       
-      await _auth.signInWithEmailAndPassword(
+      // Sign in with email and password
+      final userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+
+      // Check if user exists in database, if not create default profile
+      final userRef = _database.child('users/${userCredential.user!.uid}');
+      final snapshot = await userRef.get();
+      
+      if (!snapshot.exists) {
+        // Create default profile if user doesn't exist in database
+        await userRef.set({
+          'name': email.split('@')[0], // Use part before @ as default name
+          'email': email,
+          'phoneNumber': '',
+          'profilePicture': '',
+          'gender': '',
+          'birthDate': '',
+          'identityType': '',
+          'identityNumber': '',
+          'created_at': DateTime.now().toIso8601String(),
+        });
+      }
       
       return true;
     } on FirebaseAuthException catch (e) {
@@ -130,6 +150,39 @@ class AuthProvider with ChangeNotifier {
       return false;
     } finally {
       _setLoading(false);
+    }
+  }
+
+  Future<Map<String, dynamic>?> getUserProfile() async {
+    try {
+      if (!isAuthenticated) return null;
+      
+      final snapshot = await _database
+          .child('users/${currentUser!.uid}')
+          .get();
+      
+      if (snapshot.exists) {
+        return Map<String, dynamic>.from(snapshot.value as Map);
+      }
+      return null;
+    } catch (e) {
+      _setError('Gagal mengambil data profil');
+      return null;
+    }
+  }
+
+  Future<bool> updateUserProfile(Map<String, dynamic> data) async {
+    try {
+      if (!isAuthenticated) return false;
+      
+      await _database
+          .child('users/${currentUser!.uid}')
+          .update(data);
+      
+      return true;
+    } catch (e) {
+      _setError('Gagal memperbarui profil');
+      return false;
     }
   }
 
