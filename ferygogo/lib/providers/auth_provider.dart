@@ -82,10 +82,12 @@ class AuthProvider with ChangeNotifier {
       await _database.child('users/${userCredential.user!.uid}').set({
         'name': name,
         'email': email,
-        'phone_number': '',
-        'profile_picture': '',
-        'total_trips': 0,
-        'favorite_routes': [],
+        'phoneNumber': '',
+        'profilePicture': '',
+        'gender': '',
+        'birthDate': '',
+        'identityType': '',
+        'identityNumber': '',
         'created_at': DateTime.now().toIso8601String(),
       });
 

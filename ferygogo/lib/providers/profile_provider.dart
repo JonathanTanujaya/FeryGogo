@@ -40,7 +40,16 @@ class ProfileProvider with ChangeNotifier {
         final data = Map<String, dynamic>.from(snapshot.value as Map);
         _userProfile = UserProfile.fromMap(
           _auth.currentUser!.uid,
-          data,
+          {
+            'name': data['name'] ?? '',
+            'email': data['email'] ?? '',
+            'phoneNumber': data['phoneNumber'] ?? '',
+            'profilePicture': data['profilePicture'] ?? '',
+            'gender': data['gender'] ?? '',
+            'birthDate': data['birthDate'] ?? '',
+            'identityType': data['identityType'] ?? '',
+            'identityNumber': data['identityNumber'] ?? '',
+          },
         );
         notifyListeners();
       } else {
@@ -49,6 +58,12 @@ class ProfileProvider with ChangeNotifier {
           id: _auth.currentUser!.uid,
           name: _auth.currentUser?.displayName ?? '',
           email: _auth.currentUser?.email ?? '',
+          phoneNumber: '',
+          profilePicture: '',
+          gender: '',
+          birthDate: null,
+          identityType: '',
+          identityNumber: '',
         );
         
         await _database
