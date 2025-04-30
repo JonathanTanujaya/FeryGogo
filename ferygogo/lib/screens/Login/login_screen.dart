@@ -64,13 +64,17 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final success = await context.read<AuthProvider>().signIn(
-          _emailController.text,
-          _passwordController.text,
-        );
+    try {
+      await context.read<AuthProvider>().signIn(
+        _emailController.text,
+        _passwordController.text,
+      );
 
-    if (success && mounted) {
-      Navigator.pushReplacementNamed(context, '/home');
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    } catch (e) {
+      // Error akan ditampilkan oleh AuthProvider melalui error state
     }
   }
 

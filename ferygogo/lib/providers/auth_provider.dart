@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import '../services/error_handler.dart';
+import './profile_provider.dart';
 
 class AuthProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -47,77 +48,44 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> signIn(String email, String password) async {
+  Future<void> signIn(String email, String password) async {
     try {
       _setLoading(true);
       _setError(null);
-      
-      // Sign in with email and password
-      final userCredential = await _auth.signInWithEmailAndPassword(
+
+      await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-
-      // Check if user exists in database, if not create default profile
-      final userRef = _database.child('users/${userCredential.user!.uid}');
-      final snapshot = await userRef.get();
-      
-      if (!snapshot.exists) {
-        // Create default profile if user doesn't exist in database
-        await userRef.set({
-          'name': email.split('@')[0], // Use part before @ as default name
-          'email': email,
-          'phoneNumber': '',
-          'profilePicture': '',
-          'gender': '',
-          'birthDate': '',
-          'identityType': '',
-          'identityNumber': '',
-          'created_at': DateTime.now().toIso8601String(),
-        });
-      }
-      
-      return true;
-    } on FirebaseAuthException catch (e) {
-      _setError(ErrorHandler.getAuthErrorMessage(e));
-      return false;
     } catch (e) {
-      _setError('Terjadi kesalahan. Silakan coba lagi.');
-      return false;
+      _setError(e.toString());
+      throw e;
     } finally {
       _setLoading(false);
     }
   }
 
-  Future<bool> signUp(String name, String email, String password) async {
+  Future<void> signUp(String name, String email, String password) async {
     try {
       _setLoading(true);
       _setError(null);
 
+      // Create user with email and password
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      await _database.child('users/${userCredential.user!.uid}').set({
-        'name': name,
-        'email': email,
-        'phoneNumber': '',
-        'profilePicture': '',
-        'gender': '',
-        'birthDate': '',
-        'identityType': '',
-        'identityNumber': '',
-        'created_at': DateTime.now().toIso8601String(),
-      });
+      // Update display name
+      await userCredential.user?.updateDisplayName(name);
 
-      return true;
-    } on FirebaseAuthException catch (e) {
-      _setError(ErrorHandler.getAuthErrorMessage(e));
-      return false;
+      // Create user profile in Auth collection
+      final profileProvider = ProfileProvider();
+      await profileProvider.createNewUserProfile(userCredential.user!.uid, email);
+
     } catch (e) {
-      _setError('Terjadi kesalahan. Silakan coba lagi.');
-      return false;
+      _setError(e.toString());
+      throw e;
     } finally {
       _setLoading(false);
     }
@@ -125,13 +93,11 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> signOut() async {
     try {
-      _setLoading(true);
-      _setError(null);
       await _auth.signOut();
+      notifyListeners();
     } catch (e) {
-      _setError('Gagal keluar. Silakan coba lagi.');
-    } finally {
-      _setLoading(false);
+      _setError(e.toString());
+      throw e;
     }
   }
 

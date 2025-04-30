@@ -4,6 +4,7 @@ import '../models/user_profile.dart';
 import '../providers/profile_provider.dart';
 import '../providers/auth_provider.dart';
 import 'package:intl/intl.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -13,8 +14,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  bool _isLoading = true;
-
   @override
   void initState() {
     super.initState();
@@ -48,6 +47,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  void _navigateToEditProfile(UserProfile profile) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProfileScreen(profile: profile),
+      ),
+    ).then((_) {
+      // Reload profile after returning from edit screen
+      context.read<ProfileProvider>().loadUserProfile();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -59,7 +70,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () {
-              // TODO: Navigate to edit profile
+              final profile = context.read<ProfileProvider>().userProfile;
+              if (profile != null) {
+                _navigateToEditProfile(profile);
+              }
             },
           ),
           IconButton(
@@ -143,16 +157,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
             backgroundImage: profile.profilePicture.isNotEmpty 
               ? NetworkImage(profile.profilePicture)
               : null,
-            child: profile.profilePicture.isEmpty
+            child: profile.profilePicture.isEmpty && profile.name.isNotEmpty
               ? Text(
                   profile.name[0].toUpperCase(),
                   style: const TextStyle(fontSize: 32),
                 )
-              : null,
+              : const Icon(Icons.person, size: 32),
           ),
           const SizedBox(height: 16),
           Text(
-            profile.name,
+            profile.name.isNotEmpty ? profile.name : 'Belum diatur',
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
