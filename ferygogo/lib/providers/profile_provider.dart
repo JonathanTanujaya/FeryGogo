@@ -126,6 +126,24 @@ class ProfileProvider with ChangeNotifier {
     }
   }
 
+  Future<void> updateProfilePicture(String imageUrl) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) throw Exception('User not logged in');
+
+      await _firestore.collection('users').doc(user.uid).update({
+        'profilePicture': imageUrl,
+      });
+
+      _userProfile = _userProfile?.copyWith(profilePicture: imageUrl);
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   Future<void> signOut() async {
     try {
       await _auth.signOut();
