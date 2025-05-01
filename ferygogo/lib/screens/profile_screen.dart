@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
 import '../models/user_profile.dart';
 import '../providers/profile_provider.dart';
 import '../providers/auth_provider.dart';
@@ -14,6 +17,8 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  final ImagePicker _picker = ImagePicker();
+
   @override
   void initState() {
     super.initState();
@@ -25,6 +30,75 @@ class _ProfileScreenState extends State<ProfileScreen> {
       await context.read<ProfileProvider>().loadUserProfile();
     } catch (e) {
       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        },
+      );
+
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 75,
+      );
+
+      if (image != null) {
+        final File imageFile = File(image.path);
+        final String userId = context.read<AuthProvider>().currentUser?.uid ?? '';
+        
+        if (userId.isEmpty) {
+          throw Exception('User not logged in');
+        }
+
+        // Upload to Firebase Storage
+        final storageRef = FirebaseStorage.instance
+            .ref()
+            .child('profile_pictures')
+            .child('$userId.jpg');
+
+        // Upload file
+        await storageRef.putFile(imageFile);
+        
+        // Get download URL
+        final String downloadUrl = await storageRef.getDownloadURL();
+
+        // Update profile picture URL in Firestore
+        if (mounted) {
+          await context.read<ProfileProvider>().updateProfilePicture(downloadUrl);
+        }
+
+        // Close loading dialog
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Foto profil berhasil diperbarui')),
+          );
+        }
+      } else {
+        // User canceled image picking
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      }
+    } catch (e) {
+      // Close loading dialog
+      if (mounted) {
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
         );
@@ -152,17 +226,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Center(
       child: Column(
         children: [
-          CircleAvatar(
-            radius: 50,
-            backgroundImage: profile.profilePicture.isNotEmpty 
-              ? NetworkImage(profile.profilePicture)
-              : null,
-            child: profile.profilePicture.isEmpty && profile.name.isNotEmpty
-              ? Text(
-                  profile.name[0].toUpperCase(),
-                  style: const TextStyle(fontSize: 32),
-                )
-              : const Icon(Icons.person, size: 32),
+          GestureDetector(
+            onTap: _pickAndUploadImage,
+            child: Stack(
+              children: [
+                CircleAvatar(
+                  radius: 50,
+                  backgroundImage: profile.profilePicture.isNotEmpty 
+                    ? NetworkImage(profile.profilePicture)
+                    : null,
+                  child: profile.profilePicture.isEmpty && profile.name.isNotEmpty
+                    ? Text(
+                        profile.name[0].toUpperCase(),
+                        style: const TextStyle(fontSize: 32),
+                      )
+                    : const Icon(Icons.person, size: 32),
+                ),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
           Text(
