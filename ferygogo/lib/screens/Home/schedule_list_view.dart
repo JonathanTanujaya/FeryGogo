@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../providers/schedule_provider.dart';
-import '../models/schedule.dart';
+import '../../../providers/schedule_provider.dart';
+import '../../../models/schedule.dart';
 
 const Color sapphire = Color(0xFF0F52BA);
 const Color regularColor = Color(0xFFD4E4F7);

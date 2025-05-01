@@ -14,7 +14,7 @@ import 'providers/navigation_provider.dart';
 import 'screens/splash/splashUI.dart';  
 import 'screens/Login/login_screen.dart';
 import 'screens/SignUp/signup_screen.dart';
-import 'screens/home_screen.dart';
+import 'screens/Home/home_screen.dart';
 import 'screens/booking_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/profile_screen.dart';
@@ -82,6 +82,11 @@ class MyApp extends StatelessWidget {
                 seedColor: const Color(0xFF0F52BA),
                 primary: const Color(0xFF0F52BA),
               ),
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Color(0xFF0F52BA),
+                foregroundColor: Colors.white,
+                elevation: 0,
+              ),
             ),
             darkTheme: ThemeData(
               primarySwatch: Colors.blue,
@@ -93,6 +98,11 @@ class MyApp extends StatelessWidget {
                 seedColor: const Color(0xFF0F52BA),
                 primary: const Color(0xFF0F52BA),
                 brightness: Brightness.dark,
+              ),
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Color(0xFF0F52BA),
+                foregroundColor: Colors.white,
+                elevation: 0,
               ),
             ),
             home: const SplashScreen(),
@@ -159,11 +169,32 @@ class _MainLayoutState extends State<MainLayout> with AutomaticKeepAliveClientMi
             return true;
           },
           child: Scaffold(
-            body: SafeArea(
-              child: IndexedStack(
-                index: navigationProvider.currentIndex,
-                children: _screens,
-              ),
+            body: Stack(
+              children: [
+                // Top gradient background
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: MediaQuery.of(context).padding.top + kToolbarHeight,
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF0F52BA), Color(0xFF3B7DE9)],
+                      ),
+                    ),
+                  ),
+                ),
+                // Main content with safe area
+                SafeArea(
+                  child: IndexedStack(
+                    index: navigationProvider.currentIndex,
+                    children: _screens,
+                  ),
+                ),
+              ],
             ),
             bottomNavigationBar: BottomNavigationBar(
               currentIndex: navigationProvider.currentIndex,
@@ -171,6 +202,7 @@ class _MainLayoutState extends State<MainLayout> with AutomaticKeepAliveClientMi
               selectedItemColor: const Color(0xFF0F52BA),
               unselectedItemColor: Colors.grey,
               type: BottomNavigationBarType.fixed,
+              elevation: 8,
               items: const [
                 BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
                 BottomNavigationBarItem(icon: Icon(Icons.qr_code), label: 'Pesan'),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/weather_provider.dart';
+import '../../../providers/weather_provider.dart';
 
 class WeatherHeader extends StatelessWidget {
   const WeatherHeader({super.key});

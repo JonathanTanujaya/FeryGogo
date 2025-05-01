@@ -25,6 +25,12 @@ class ProfileProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Map<String, dynamic> _sanitizeData(Map<dynamic, dynamic> data) {
+    return Map<String, dynamic>.fromEntries(
+      data.entries.map((e) => MapEntry(e.key.toString(), e.value)),
+    );
+  }
+
   Future<void> createNewUserProfile(String uid, String email) async {
     try {
       final newProfile = {
@@ -60,9 +66,11 @@ class ProfileProvider with ChangeNotifier {
 
       if (snapshot.exists) {
         final data = snapshot.data()!;
+        // Ensure data is Map<String, dynamic>
+        final sanitizedData = _sanitizeData(data);
         _userProfile = UserProfile.fromMap(
           _auth.currentUser!.uid,
-          data,
+          sanitizedData,
         );
         notifyListeners();
       } else {
