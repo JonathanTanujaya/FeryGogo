@@ -17,29 +17,56 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
-  late TextEditingController _genderController;
-  late TextEditingController _identityTypeController;
   late TextEditingController _identityNumberController;
+  final TextEditingController _otherIdentityTypeController =
+      TextEditingController(); // Inisialisasi langsung di sini
   DateTime? _selectedBirthDate;
+  String? _selectedGender;
+  String? _selectedIdentityType;
+  bool _isOtherIdentityType = false;
+
+  // Define gender options
+  final List<String> _genderOptions = ['Laki-laki', 'Perempuan'];
+
+  // Define identity type options
+  final List<String> _identityTypes = [
+    'KTP',
+    'SIM',
+    'NIK',
+    'Kartu Pelajar',
+    'Lainnya',
+  ];
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.profile.name);
     _phoneController = TextEditingController(text: widget.profile.phoneNumber);
-    _genderController = TextEditingController(text: widget.profile.gender);
-    _identityTypeController = TextEditingController(text: widget.profile.identityType);
-    _identityNumberController = TextEditingController(text: widget.profile.identityNumber);
+    _identityNumberController = TextEditingController(
+      text: widget.profile.identityNumber,
+    );
+
     _selectedBirthDate = widget.profile.birthDate;
+    _selectedGender = widget.profile.gender;
+
+    // Initialize identity type
+    if (widget.profile.identityType.isNotEmpty) {
+      if (_identityTypes.contains(widget.profile.identityType)) {
+        _selectedIdentityType = widget.profile.identityType;
+      } else {
+        _selectedIdentityType = 'Lainnya';
+        _isOtherIdentityType = true;
+        _otherIdentityTypeController.text = widget.profile.identityType;
+      }
+    }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _genderController.dispose();
-    _identityTypeController.dispose();
     _identityNumberController.dispose();
+    _otherIdentityTypeController.dispose();
     super.dispose();
   }
 
@@ -64,9 +91,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       await context.read<ProfileProvider>().updateProfile(
         name: _nameController.text,
         phoneNumber: _phoneController.text,
-        gender: _genderController.text,
+        gender: _selectedGender ?? '',
         birthDate: _selectedBirthDate,
-        identityType: _identityTypeController.text,
+        identityType:
+            _isOtherIdentityType
+                ? _otherIdentityTypeController.text
+                : _selectedIdentityType ?? '',
         identityNumber: _identityNumberController.text,
       );
 
@@ -78,9 +108,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -102,10 +132,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             children: [
               const Text(
                 'Informasi Akun',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -133,20 +160,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 24),
               const Text(
                 'Informasi Pribadi',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _genderController,
-                decoration: const InputDecoration(
-                  labelText: 'Jenis Kelamin',
-                  border: OutlineInputBorder(),
-                ),
-              ),
+
+              // Gender Radio Buttons
+              const Text('Jenis Kelamin'),
+              const SizedBox(height: 8),
+              ...List.generate(_genderOptions.length, (index) {
+                return RadioListTile<String>(
+                  title: Text(_genderOptions[index]),
+                  value: _genderOptions[index],
+                  groupValue: _selectedGender,
+                  onChanged: (String? value) {
+                    setState(() {
+                      _selectedGender = value;
+                    });
+                  },
+                );
+              }),
               const SizedBox(height: 16),
+
+              // Birth Date
               InkWell(
                 onTap: _selectDate,
                 child: InputDecorator(
@@ -162,13 +197,49 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _identityTypeController,
+
+              // Identity Type Dropdown
+              DropdownButtonFormField<String>(
+                value: _selectedIdentityType,
                 decoration: const InputDecoration(
                   labelText: 'Jenis Identitas',
                   border: OutlineInputBorder(),
                 ),
+                items:
+                    _identityTypes.map((String type) {
+                      return DropdownMenuItem<String>(
+                        value: type,
+                        child: Text(type),
+                      );
+                    }).toList(),
+                onChanged: (String? value) {
+                  setState(() {
+                    _selectedIdentityType = value;
+                    _isOtherIdentityType = value == 'Lainnya';
+                    if (!_isOtherIdentityType) {
+                      _otherIdentityTypeController
+                          .clear(); // Clear ketika bukan Lainnya
+                    }
+                  });
+                },
               ),
+              if (_isOtherIdentityType) ...[
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _otherIdentityTypeController,
+                  decoration: const InputDecoration(
+                    labelText: 'Masukkan Jenis Identitas Lainnya',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (_isOtherIdentityType &&
+                        (value == null || value.isEmpty)) {
+                      return 'Jenis identitas tidak boleh kosong';
+                    }
+                    return null;
+                  },
+                ),
+              ],
               const SizedBox(height: 16),
               TextFormField(
                 controller: _identityNumberController,
@@ -176,6 +247,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   labelText: 'Nomor Identitas',
                   border: OutlineInputBorder(),
                 ),
+                keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 24),
               SizedBox(

@@ -41,7 +41,7 @@ class HistoryProvider with ChangeNotifier {
 
       final data = snapshot.value as Map<dynamic, dynamic>;
       _bookings = data.entries
-          .map((e) => Booking.fromMap(e.key as String, e.value as Map<dynamic, dynamic>))
+          .map((e) => Booking.fromMap(e.key as String, (e.value as Map<dynamic, dynamic>).cast<String, dynamic>()))
           .toList()
           .reversed
           .toList();
@@ -78,7 +78,7 @@ class HistoryProvider with ChangeNotifier {
 
       final data = snapshot.value as Map<dynamic, dynamic>;
       final newBookings = data.entries
-          .map((e) => Booking.fromMap(e.key as String, e.value as Map<dynamic, dynamic>))
+          .map((e) => Booking.fromMap(e.key as String, (e.value as Map<dynamic, dynamic>).cast<String, dynamic>()))
           .toList()
           .reversed
           .toList();

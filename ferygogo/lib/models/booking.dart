@@ -38,6 +38,8 @@ class Booking {
     );
   }
 
+  String? get route_name => null;
+
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,

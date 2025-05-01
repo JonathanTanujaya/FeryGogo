@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/profile_provider.dart';
+import 'package:intl/intl.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
@@ -59,7 +61,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return 'Konfirmasi password tidak boleh kosong';
     }
     if (value != _passwordController.text) {
-      return 'Password tidak cocok';
+      return 'Password tidak sama';
     }
     return null;
   }
@@ -68,17 +70,52 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     try {
-      await context.read<AuthProvider>().signUp(
+      final authProvider = context.read<AuthProvider>();
+      final profileProvider = context.read<ProfileProvider>();
+      
+      // Buat akun user
+      await authProvider.signUp(
         _nameController.text,
         _emailController.text,
         _passwordController.text,
       );
-      
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
+
+      if (authProvider.currentUser != null) {
+        // Buat profil user dengan field kosong
+        await profileProvider.createNewUserProfile(
+          authProvider.currentUser!.uid,
+          _emailController.text,
+        );
+
+        // Update nama saja, sisanya dibiarkan kosong untuk diisi nanti
+        await profileProvider.updateProfile(
+          name: _nameController.text,
+          phoneNumber: '',
+          gender: '',
+          birthDate: null,
+          identityType: '',
+          identityNumber: '',
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Pendaftaran berhasil. Silakan lengkapi profil Anda di menu Akun'),
+              duration: Duration(seconds: 3),
+            ),
+          );
+          Navigator.pushReplacementNamed(context, '/home');
+        }
       }
     } catch (e) {
-      // Error akan ditampilkan oleh AuthProvider melalui error state
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Pendaftaran gagal: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -87,6 +124,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Daftar'),
+        backgroundColor: const Color(0xFF0F52BA),
+        foregroundColor: Colors.white,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -96,57 +135,50 @@ class _SignUpScreenState extends State<SignUpScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 32),
-                Hero(
-                  tag: 'app_logo',
-                  child: Icon(
-                    Icons.directions_ferry,
-                    size: 100,
-                    color: Color(0xFF0F52BA),
-                  ),
-                ),
-                const SizedBox(height: 24),
                 const Text(
                   'Buat Akun Baru',
                   style: TextStyle(
-                    fontSize: 28,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF0F52BA),
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
+
+                // Nama Lengkap
                 TextFormField(
                   controller: _nameController,
-                  validator: _validateName,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Nama Lengkap',
-                    prefixIcon: const Icon(Icons.person),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.person),
                   ),
+                  validator: _validateName,
+                  textInputAction: TextInputAction.next,
                 ),
                 const SizedBox(height: 16),
+
+                // Email
                 TextFormField(
                   controller: _emailController,
-                  validator: _validateEmail,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Email',
-                    prefixIcon: const Icon(Icons.email),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.email),
                   ),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: _validateEmail,
+                  textInputAction: TextInputAction.next,
                 ),
                 const SizedBox(height: 16),
+
+                // Password
                 TextFormField(
                   controller: _passwordController,
-                  validator: _validatePassword,
-                  obscureText: !_isPasswordVisible,
                   decoration: InputDecoration(
                     labelText: 'Password',
+                    border: const OutlineInputBorder(),
                     prefixIcon: const Icon(Icons.lock),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -160,19 +192,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         });
                       },
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
                   ),
+                  obscureText: !_isPasswordVisible,
+                  validator: _validatePassword,
+                  textInputAction: TextInputAction.next,
                 ),
                 const SizedBox(height: 16),
+
+                // Confirm Password
                 TextFormField(
                   controller: _confirmPasswordController,
-                  validator: _validateConfirmPassword,
-                  obscureText: !_isConfirmPasswordVisible,
                   decoration: InputDecoration(
                     labelText: 'Konfirmasi Password',
-                    prefixIcon: const Icon(Icons.lock_outline),
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.lock),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _isConfirmPasswordVisible
@@ -185,66 +218,57 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         });
                       },
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
                   ),
+                  obscureText: !_isConfirmPasswordVisible,
+                  validator: _validateConfirmPassword,
+                  textInputAction: TextInputAction.done,
                 ),
                 const SizedBox(height: 32),
+
+                // Sign Up Button
                 Consumer<AuthProvider>(
                   builder: (context, auth, child) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        ElevatedButton(
-                          onPressed: auth.isLoading ? null : _signUp,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0F52BA),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: auth.isLoading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
-                                    ),
-                                  ),
-                                )
-                              : const Text(
-                                  'DAFTAR',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
+                    return ElevatedButton(
+                      onPressed: auth.isLoading ? null : _signUp,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0F52BA),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        if (auth.error != null) ...[
-                          const SizedBox(height: 16),
-                          Text(
-                            auth.error!,
-                            style: const TextStyle(
-                              color: Colors.red,
-                              fontSize: 14,
+                      ),
+                      child: auth.isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : const Text(
+                              'DAFTAR',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ],
                     );
                   },
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
+
+                // Login Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Sudah punya akun? '),
+                    const Text(
+                      'Sudah punya akun? ',
+                      style: TextStyle(color: Colors.grey),
+                    ),
                     TextButton(
                       onPressed: () => Navigator.pop(context),
                       child: const Text(

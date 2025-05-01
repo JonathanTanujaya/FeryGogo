@@ -84,14 +84,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   margin: const EdgeInsets.only(bottom: 16),
                   child: ListTile(
                     title: Text(
-                      booking.routeName,
+                      booking.route_name ?? 'No Route',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    subtitle: Text(booking.date),
+                    subtitle: Text(booking.toString()),
                     trailing: Text(
-                      booking.status,
+                      booking.status ?? 'Unknown Status',
                       style: TextStyle(
                         color: booking.status == 'Selesai'
                             ? Colors.green

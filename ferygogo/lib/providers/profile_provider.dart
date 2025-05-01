@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_profile.dart';
 
 class ProfileProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final DatabaseReference _database = FirebaseDatabase.instance.ref();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   
   UserProfile? _userProfile;
   bool _isLoading = false;
@@ -36,10 +36,10 @@ class ProfileProvider with ChangeNotifier {
         'identityType': '',
         'identityNumber': '',
         'profilePicture': '',
-        'createdAt': DateTime.now().toIso8601String(),
+        'createdAt': FieldValue.serverTimestamp(),
       };
 
-      await _database.child('Auth/$uid').set(newProfile);
+      await _firestore.collection('users').doc(uid).set(newProfile);
     } catch (e) {
       _setError('Failed to create user profile: $e');
       throw e;
@@ -53,19 +53,19 @@ class ProfileProvider with ChangeNotifier {
       _setLoading(true);
       _setError(null);
 
-      final snapshot = await _database
-          .child('Auth/${_auth.currentUser!.uid}')
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(_auth.currentUser!.uid)
           .get();
 
-      if (snapshot.exists && snapshot.value != null) {
-        final data = Map<String, dynamic>.from(snapshot.value as Map);
+      if (snapshot.exists) {
+        final data = snapshot.data()!;
         _userProfile = UserProfile.fromMap(
           _auth.currentUser!.uid,
           data,
         );
         notifyListeners();
       } else {
-        // Profile tidak ditemukan
         _setError('Profil tidak ditemukan');
       }
     } catch (e) {
@@ -100,8 +100,9 @@ class ProfileProvider with ChangeNotifier {
       if (identityNumber != null) updates['identityNumber'] = identityNumber;
       if (profilePicture != null) updates['profilePicture'] = profilePicture;
 
-      await _database
-          .child('Auth/${_auth.currentUser!.uid}')
+      await _firestore
+          .collection('users')
+          .doc(_auth.currentUser!.uid)
           .update(updates);
 
       // Update local state

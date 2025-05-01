@@ -10,7 +10,7 @@ import 'providers/profile_provider.dart';
 import 'providers/schedule_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/weather_provider.dart';
-import 'screens/splash_screen.dart';
+import 'screens/splash/splashUI.dart';  // Updated import
 import 'screens/Login/login_screen.dart';
 import 'screens/SignUp/signup_screen.dart';
 import 'screens/home_screen.dart';

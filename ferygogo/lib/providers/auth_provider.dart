@@ -1,14 +1,11 @@
 import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+import '../services/auth_service.dart';
 import '../services/error_handler.dart';
-import './profile_provider.dart';
 
 class AuthProvider with ChangeNotifier {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final DatabaseReference _database = FirebaseDatabase.instance.ref();
+  final AuthService _authService = AuthService();
   bool _isLoading = false;
   String? _error;
   bool _initialized = false;
@@ -20,8 +17,8 @@ class AuthProvider with ChangeNotifier {
 
   bool get isLoading => _isLoading;
   String? get error => _error;
-  User? get currentUser => _auth.currentUser;
-  bool get isAuthenticated => _auth.currentUser != null;
+  User? get currentUser => _authService.currentUser;
+  bool get isAuthenticated => _authService.isAuthenticated;
   bool get isInitialized => _initialized;
 
   void _setLoading(bool value) {
@@ -52,11 +49,7 @@ class AuthProvider with ChangeNotifier {
     try {
       _setLoading(true);
       _setError(null);
-
-      await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      await _authService.signIn(email, password);
     } catch (e) {
       _setError(e.toString());
       throw e;
@@ -69,20 +62,11 @@ class AuthProvider with ChangeNotifier {
     try {
       _setLoading(true);
       _setError(null);
-
-      // Create user with email and password
-      final userCredential = await _auth.createUserWithEmailAndPassword(
+      await _authService.signUp(
+        name: name,
         email: email,
         password: password,
       );
-
-      // Update display name
-      await userCredential.user?.updateDisplayName(name);
-
-      // Create user profile in Auth collection
-      final profileProvider = ProfileProvider();
-      await profileProvider.createNewUserProfile(userCredential.user!.uid, email);
-
     } catch (e) {
       _setError(e.toString());
       throw e;
@@ -93,7 +77,7 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> signOut() async {
     try {
-      await _auth.signOut();
+      await _authService.signOut();
       notifyListeners();
     } catch (e) {
       _setError(e.toString());
@@ -105,8 +89,7 @@ class AuthProvider with ChangeNotifier {
     try {
       _setLoading(true);
       _setError(null);
-
-      await _auth.sendPasswordResetEmail(email: email);
+      await _authService.resetPassword(email);
       return true;
     } on FirebaseAuthException catch (e) {
       _setError(ErrorHandler.getAuthErrorMessage(e));
@@ -122,15 +105,7 @@ class AuthProvider with ChangeNotifier {
   Future<Map<String, dynamic>?> getUserProfile() async {
     try {
       if (!isAuthenticated) return null;
-      
-      final snapshot = await _database
-          .child('users/${currentUser!.uid}')
-          .get();
-      
-      if (snapshot.exists) {
-        return Map<String, dynamic>.from(snapshot.value as Map);
-      }
-      return null;
+      return await _authService.getUserProfile(currentUser!.uid);
     } catch (e) {
       _setError('Gagal mengambil data profil');
       return null;
@@ -140,11 +115,7 @@ class AuthProvider with ChangeNotifier {
   Future<bool> updateUserProfile(Map<String, dynamic> data) async {
     try {
       if (!isAuthenticated) return false;
-      
-      await _database
-          .child('users/${currentUser!.uid}')
-          .update(data);
-      
+      await _authService.updateUserProfile(currentUser!.uid, data);
       return true;
     } catch (e) {
       _setError('Gagal memperbarui profil');
@@ -153,7 +124,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   void init() {
-    _authStateSubscription = _auth.authStateChanges().listen((User? user) {
+    _authStateSubscription = FirebaseAuth.instance.authStateChanges().listen((User? user) {
       _initialized = true;
       notifyListeners();
     }, onError: (error) {
