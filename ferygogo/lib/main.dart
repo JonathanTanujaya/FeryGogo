@@ -10,7 +10,8 @@ import 'providers/profile_provider.dart';
 import 'providers/schedule_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/weather_provider.dart';
-import 'screens/splash/splashUI.dart';  // Updated import
+import 'providers/navigation_provider.dart';
+import 'screens/splash/splashUI.dart';  
 import 'screens/Login/login_screen.dart';
 import 'screens/SignUp/signup_screen.dart';
 import 'screens/home_screen.dart';
@@ -63,6 +64,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => WeatherProvider()),
         ChangeNotifierProvider(create: (_) => ScheduleProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider(prefs)),
+        ChangeNotifierProvider(create: (_) => NavigationProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -109,6 +111,10 @@ class MyApp extends StatelessWidget {
                   return MaterialPageRoute(
                     builder: (_) => const AuthGuard(child: MainLayout()),
                   );
+                case '/profile':
+                  return MaterialPageRoute(
+                    builder: (_) => const AuthGuard(child: ProfileScreen()),
+                  );
                 default:
                   return MaterialPageRoute(builder: (_) => const SplashScreen());
               }
@@ -128,20 +134,12 @@ class MainLayout extends StatefulWidget {
 }
 
 class _MainLayoutState extends State<MainLayout> with AutomaticKeepAliveClientMixin {
-  int _currentIndex = 0;
-
   final List<Widget> _screens = [
     const HomeScreen(),
     const BookingScreen(),
     const HistoryScreen(),
     const ProfileScreen(),
   ];
-
-  void _onTabTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-  }
 
   @override
   bool get wantKeepAlive => true;
@@ -150,37 +148,39 @@ class _MainLayoutState extends State<MainLayout> with AutomaticKeepAliveClientMi
   Widget build(BuildContext context) {
     super.build(context);
     
-    return WillPopScope(
-      onWillPop: () async {
-        if (_currentIndex != 0) {
-          setState(() {
-            _currentIndex = 0;
-          });
-          return false;
-        }
-        return true;
-      },
-      child: Scaffold(
-        body: SafeArea(
-          child: IndexedStack(
-            index: _currentIndex,
-            children: _screens,
+    return Consumer<NavigationProvider>(
+      builder: (context, navigationProvider, _) {
+        return WillPopScope(
+          onWillPop: () async {
+            if (navigationProvider.currentIndex != 0) {
+              navigationProvider.setIndex(0);
+              return false;
+            }
+            return true;
+          },
+          child: Scaffold(
+            body: SafeArea(
+              child: IndexedStack(
+                index: navigationProvider.currentIndex,
+                children: _screens,
+              ),
+            ),
+            bottomNavigationBar: BottomNavigationBar(
+              currentIndex: navigationProvider.currentIndex,
+              onTap: navigationProvider.setIndex,
+              selectedItemColor: const Color(0xFF0F52BA),
+              unselectedItemColor: Colors.grey,
+              type: BottomNavigationBarType.fixed,
+              items: const [
+                BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
+                BottomNavigationBarItem(icon: Icon(Icons.qr_code), label: 'Pesan'),
+                BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Riwayat'),
+                BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Akun'),
+              ],
+            ),
           ),
-        ),
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: _onTabTapped,
-          selectedItemColor: const Color(0xFF0F52BA),
-          unselectedItemColor: Colors.grey,
-          type: BottomNavigationBarType.fixed,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
-            BottomNavigationBarItem(icon: Icon(Icons.qr_code), label: 'Pesan'),
-            BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Riwayat'),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Akun'),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 }

@@ -90,17 +90,18 @@ class ScheduleProvider with ChangeNotifier {
   }
 
   Future<void> loadMore() async {
-    if (_isLoading || !_hasMore) return;
+    if (_isLoading || !_hasMore || _lastKey == null) return;
 
     try {
       _setLoading(true);
       _setError(null);
 
+      // Menggunakan orderByKey() dan startAt() untuk pagination yang benar
       final query = _database
           .child('schedules')
           .orderByKey()
-          .startAfter(_lastKey)
-          .limitToFirst(_pageSize);
+          .startAt(_lastKey)
+          .limitToFirst(_pageSize + 1); // +1 untuk mengecek item selanjutnya
 
       final snapshot = await query.get();
       if (!snapshot.exists) {
@@ -109,9 +110,26 @@ class ScheduleProvider with ChangeNotifier {
       }
 
       final data = snapshot.value as Map<dynamic, dynamic>;
-      final newSchedules = data.entries
-          .map((e) => Schedule.fromMap(e.key as String, e.value as Map<dynamic, dynamic>))
-          .toList();
+      final List<Schedule> newSchedules = [];
+      
+      // Skip item pertama karena itu adalah item terakhir dari batch sebelumnya
+      var entries = data.entries.toList();
+      if (entries.length > 1) {
+        entries = entries.sublist(1);
+      } else {
+        _hasMore = false;
+        return;
+      }
+
+      for (var entry in entries) {
+        final schedule = Schedule.fromMap(
+          entry.key as String, 
+          entry.value as Map<dynamic, dynamic>
+        );
+        if (schedule.type == _schedules.first.type) {
+          newSchedules.add(schedule);
+        }
+      }
 
       if (newSchedules.isNotEmpty) {
         _schedules.addAll(newSchedules);
