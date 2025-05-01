@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
@@ -20,6 +21,9 @@ import 'screens/history_screen.dart';
 import 'screens/profile_screen.dart';
 import 'utils/auth_guard.dart';
 
+// Konstanta untuk mode debug
+const bool isDebugMode = true; // Set ke false untuk production
+
 Future<void> main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
@@ -30,6 +34,15 @@ Future<void> main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    
+    // Initialize App Check after Firebase
+    print('Initializing Firebase App Check...');
+    await FirebaseAppCheck.instance.activate(
+      // Gunakan debug provider untuk development
+      androidProvider: isDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+      appleProvider: AppleProvider.appAttest,
+    );
+    
     print('Firebase initialized successfully');
     
     // Then get SharedPreferences instance

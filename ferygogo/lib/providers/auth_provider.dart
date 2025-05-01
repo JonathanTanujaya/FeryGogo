@@ -5,11 +5,13 @@ import '../services/auth_service.dart';
 import '../services/error_handler.dart';
 
 class AuthProvider with ChangeNotifier {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   final AuthService _authService = AuthService();
   bool _isLoading = false;
   String? _error;
   bool _initialized = false;
   StreamSubscription<User?>? _authStateSubscription;
+  User? _currentUser;
 
   AuthProvider() {
     init();
@@ -17,8 +19,8 @@ class AuthProvider with ChangeNotifier {
 
   bool get isLoading => _isLoading;
   String? get error => _error;
-  User? get currentUser => _authService.currentUser;
-  bool get isAuthenticated => _authService.isAuthenticated;
+  User? get currentUser => _currentUser;
+  bool get isAuthenticated => _currentUser != null;
   bool get isInitialized => _initialized;
 
   void _setLoading(bool value) {
@@ -29,6 +31,13 @@ class AuthProvider with ChangeNotifier {
   void _setError(String? value) {
     _error = value;
     notifyListeners();
+  }
+
+  void _updateUser(User? user) {
+    if (_currentUser?.uid != user?.uid) {
+      _currentUser = user;
+      notifyListeners();
+    }
   }
 
   Future<void> checkAuthState() async {
@@ -42,17 +51,35 @@ class AuthProvider with ChangeNotifier {
         throw Exception('Failed to initialize authentication state');
       }
     }
-    notifyListeners();
   }
 
   Future<void> signIn(String email, String password) async {
     try {
       _setLoading(true);
       _setError(null);
-      await _authService.signIn(email, password);
+      
+      print('AuthProvider: Starting sign in process');
+      
+      // Perform sign in
+      print('AuthProvider: Calling auth service signIn');
+      final credential = await _authService.signIn(email, password);
+      
+      if (credential.user == null) {
+        throw Exception('Gagal mendapatkan data pengguna');
+      }
+      
+      // Update user state
+      _updateUser(credential.user);
+      _initialized = true;
+      print('AuthProvider: User updated successfully - ${credential.user?.uid}');
+      
+    } on FirebaseAuthException catch (e) {
+      print('AuthProvider: FirebaseAuthException caught - ${e.code}: ${e.message}');
+      final message = ErrorHandler.getAuthErrorMessage(e);
+      _setError(message);
     } catch (e) {
-      _setError(e.toString());
-      throw e;
+      print('AuthProvider: General error caught - $e');
+      _setError('Terjadi kesalahan saat login');
     } finally {
       _setLoading(false);
     }
@@ -62,14 +89,23 @@ class AuthProvider with ChangeNotifier {
     try {
       _setLoading(true);
       _setError(null);
+      
       await _authService.signUp(
         name: name,
         email: email,
         password: password,
       );
+
+      // Wait for auth state to be properly updated
+      await Future.delayed(const Duration(milliseconds: 500));
+      await checkAuthState();
+    } on FirebaseAuthException catch (e) {
+      final message = ErrorHandler.getAuthErrorMessage(e);
+      _setError(message);
+      throw Exception(message);
     } catch (e) {
-      _setError(e.toString());
-      throw e;
+      _setError('Terjadi kesalahan saat mendaftar');
+      throw Exception('Terjadi kesalahan saat mendaftar');
     } finally {
       _setLoading(false);
     }
@@ -77,11 +113,14 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> signOut() async {
     try {
+      _setLoading(true);
       await _authService.signOut();
-      notifyListeners();
+      _updateUser(null);
     } catch (e) {
-      _setError(e.toString());
-      throw e;
+      _setError('Terjadi kesalahan saat logout');
+      throw Exception('Terjadi kesalahan saat logout');
+    } finally {
+      _setLoading(false);
     }
   }
 
@@ -92,10 +131,11 @@ class AuthProvider with ChangeNotifier {
       await _authService.resetPassword(email);
       return true;
     } on FirebaseAuthException catch (e) {
-      _setError(ErrorHandler.getAuthErrorMessage(e));
+      final message = ErrorHandler.getAuthErrorMessage(e);
+      _setError(message);
       return false;
     } catch (e) {
-      _setError('Terjadi kesalahan. Silakan coba lagi.');
+      _setError('Terjadi kesalahan saat mereset password');
       return false;
     } finally {
       _setLoading(false);
@@ -105,7 +145,7 @@ class AuthProvider with ChangeNotifier {
   Future<Map<String, dynamic>?> getUserProfile() async {
     try {
       if (!isAuthenticated) return null;
-      return await _authService.getUserProfile(currentUser!.uid);
+      return await _authService.getUserProfile(_currentUser!.uid);
     } catch (e) {
       _setError('Gagal mengambil data profil');
       return null;
@@ -115,7 +155,7 @@ class AuthProvider with ChangeNotifier {
   Future<bool> updateUserProfile(Map<String, dynamic> data) async {
     try {
       if (!isAuthenticated) return false;
-      await _authService.updateUserProfile(currentUser!.uid, data);
+      await _authService.updateUserProfile(_currentUser!.uid, data);
       return true;
     } catch (e) {
       _setError('Gagal memperbarui profil');
@@ -124,13 +164,16 @@ class AuthProvider with ChangeNotifier {
   }
 
   void init() {
-    _authStateSubscription = FirebaseAuth.instance.authStateChanges().listen((User? user) {
-      _initialized = true;
-      notifyListeners();
-    }, onError: (error) {
-      _setError('Error initializing auth: $error');
-      _initialized = true;
-    });
+    _authStateSubscription = FirebaseAuth.instance.authStateChanges().listen(
+      (User? user) {
+        _initialized = true;
+        _updateUser(user);
+      },
+      onError: (error) {
+        _setError('Error initializing auth: $error');
+        _initialized = true;
+      },
+    );
   }
 
   @override

@@ -10,15 +10,19 @@ class AuthService {
 
   Future<UserCredential> signIn(String email, String password) async {
     try {
+      print('AuthService: Starting sign in');
+      
+      // Sign in without clearing existing state
       final userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-      
-      // Ensure user document exists in Firestore
+
+      print('AuthService: Sign in successful, checking Firestore document');
       final userDoc = await _firestore.collection('users').doc(userCredential.user!.uid).get();
+      
       if (!userDoc.exists) {
-        // Create user document if it doesn't exist
+        print('AuthService: Creating new user document in Firestore');
         await _firestore.collection('users').doc(userCredential.user!.uid).set({
           'email': email,
           'name': userCredential.user?.displayName ?? '',
@@ -32,8 +36,10 @@ class AuthService {
         });
       }
       
+      print('AuthService: Login completed successfully');
       return userCredential;
     } catch (e) {
+      print('AuthService: Error during sign in - $e');
       throw _handleAuthError(e);
     }
   }
@@ -103,22 +109,45 @@ class AuthService {
   }
 
   Exception _handleAuthError(dynamic error) {
+    print('AuthService._handleAuthError: ${error.runtimeType} - $error');
+    
     if (error is FirebaseAuthException) {
+      print('AuthService: FirebaseAuthException details:');
+      print('- Code: ${error.code}');
+      print('- Message: ${error.message}');
+      print('- Email: ${error.email}');
+      print('- Credential: ${error.credential}');
+      
       switch (error.code) {
         case 'user-not-found':
           return Exception('Email tidak terdaftar');
         case 'wrong-password':
           return Exception('Password salah');
+        case 'invalid-credential':
+          return Exception('Email atau password salah');
         case 'email-already-in-use':
           return Exception('Email sudah terdaftar');
         case 'invalid-email':
           return Exception('Format email tidak valid');
         case 'weak-password':
           return Exception('Password terlalu lemah');
+        case 'network-request-failed':
+          return Exception('Gagal terhubung ke server. Periksa koneksi internet Anda');
+        case 'too-many-requests':
+          return Exception('Terlalu banyak percobaan. Silakan coba lagi nanti');
         default:
           return Exception(error.message ?? 'Terjadi kesalahan autentikasi');
       }
     }
+    
+    if (error is FirebaseException) {
+      print('AuthService: FirebaseException details:');
+      print('- Code: ${error.code}');
+      print('- Message: ${error.message}');
+      print('- Stack: ${error.stackTrace}');
+      return Exception('Terjadi kesalahan: ${error.message}');
+    }
+    
     return Exception('Terjadi kesalahan: $error');
   }
 }

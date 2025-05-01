@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class ErrorHandler {
   static String getAuthErrorMessage(FirebaseAuthException error) {
+    print('ErrorHandler: Processing error code - ${error.code}');
+    
     switch (error.code) {
       case 'invalid-email':
         return 'Format email tidak valid';
@@ -19,10 +21,13 @@ class ErrorHandler {
       case 'weak-password':
         return 'Password terlalu lemah';
       case 'network-request-failed':
-        return 'Koneksi internet bermasalah';
+        return 'Gagal terhubung ke server. Periksa koneksi internet Anda';
       case 'too-many-requests':
         return 'Terlalu banyak percobaan. Silakan coba lagi nanti';
+      case 'invalid-credential':
+        return 'Email atau password salah';
       default:
+        print('ErrorHandler: Unhandled error code - ${error.code}');
         return error.message ?? 'Terjadi kesalahan. Silakan coba lagi';
     }
   }

@@ -65,16 +65,30 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     if (!_formKey.currentState!.validate()) return;
 
     try {
-      await context.read<AuthProvider>().signIn(
+      final authProvider = context.read<AuthProvider>();
+      
+      print('Attempting to sign in with email: ${_emailController.text}');
+      
+      await authProvider.signIn(
         _emailController.text,
         _passwordController.text,
       );
 
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
+      if (!mounted) return;
+
+      // Check if user is authenticated after sign in
+      if (authProvider.isAuthenticated) {
+        print('Login successful, navigating to home');
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/home',
+          (route) => false, // Remove all previous routes
+        );
+      } else {
+        print('Login failed: ${authProvider.error}');
       }
     } catch (e) {
-      // Error akan ditampilkan oleh AuthProvider melalui error state
+      print('Login error caught: $e');
+      // Error sudah ditangani oleh AuthProvider
     }
   }
 
