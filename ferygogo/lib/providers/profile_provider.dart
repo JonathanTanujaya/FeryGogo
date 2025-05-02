@@ -42,6 +42,7 @@ class ProfileProvider with ChangeNotifier {
         'identityType': '',
         'identityNumber': '',
         'profilePicture': '',
+        'imageBase64': '', // Add imageBase64 field
         'createdAt': FieldValue.serverTimestamp(),
       };
 
@@ -92,6 +93,7 @@ class ProfileProvider with ChangeNotifier {
     String? identityType,
     String? identityNumber,
     String? profilePicture,
+    String? imageBase64, // Add imageBase64 parameter
   }) async {
     if (_auth.currentUser == null) return;
 
@@ -107,6 +109,7 @@ class ProfileProvider with ChangeNotifier {
       if (identityType != null) updates['identityType'] = identityType;
       if (identityNumber != null) updates['identityNumber'] = identityNumber;
       if (profilePicture != null) updates['profilePicture'] = profilePicture;
+      if (imageBase64 != null) updates['imageBase64'] = imageBase64; // Add imageBase64 update
 
       await _firestore
           .collection('users')
@@ -123,6 +126,7 @@ class ProfileProvider with ChangeNotifier {
           identityType: identityType,
           identityNumber: identityNumber,
           profilePicture: profilePicture,
+          imageBase64: imageBase64, // Add imageBase64 to copyWith
         );
         notifyListeners();
       }

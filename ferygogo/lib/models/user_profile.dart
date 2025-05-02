@@ -10,6 +10,7 @@ class UserProfile {
   final String identityType;
   final String identityNumber;
   final String profilePicture;
+  final String? imageBase64; // Add base64 image support
   final DateTime? createdAt;
 
   UserProfile({
@@ -22,6 +23,7 @@ class UserProfile {
     required this.identityType,
     required this.identityNumber,
     required this.profilePicture,
+    this.imageBase64, // Add to constructor
     this.createdAt,
   });
 
@@ -36,6 +38,7 @@ class UserProfile {
       identityType: map['identityType'] ?? '',
       identityNumber: map['identityNumber'] ?? '',
       profilePicture: map['profilePicture'] ?? '',
+      imageBase64: map['imageBase64'], // Add to factory
       createdAt: map['createdAt'] is Timestamp 
           ? (map['createdAt'] as Timestamp).toDate()
           : null,
@@ -52,6 +55,7 @@ class UserProfile {
       'identityType': identityType,
       'identityNumber': identityNumber,
       'profilePicture': profilePicture,
+      'imageBase64': imageBase64, // Add to map
       'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : null,
     };
   }
@@ -82,6 +86,7 @@ class UserProfile {
     String? identityType,
     String? identityNumber,
     String? profilePicture,
+    String? imageBase64, // Add to copyWith
   }) {
     return UserProfile(
       id: id,
@@ -93,6 +98,7 @@ class UserProfile {
       identityType: identityType ?? this.identityType,
       identityNumber: identityNumber ?? this.identityNumber,
       profilePicture: profilePicture ?? this.profilePicture,
+      imageBase64: imageBase64 ?? this.imageBase64, // Add to constructor call
       createdAt: createdAt,
     );
   }

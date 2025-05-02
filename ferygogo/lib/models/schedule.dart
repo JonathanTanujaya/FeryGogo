@@ -1,42 +1,44 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Schedule {
   final String id;
   final String name;
+  final String type;
   final DateTime departureTime;
   final DateTime arrivalTime;
-  final String type;
-  final double availability;
   final double price;
+  final double availability;
 
   Schedule({
     required this.id,
     required this.name,
+    required this.type,
     required this.departureTime,
     required this.arrivalTime,
-    required this.type,
-    required this.availability,
     required this.price,
+    required this.availability,
   });
 
-  factory Schedule.fromMap(String id, Map<dynamic, dynamic> map) {
+  factory Schedule.fromMap(String id, Map<String, dynamic> map) {
     return Schedule(
       id: id,
       name: map['name'] ?? '',
-      departureTime: DateTime.parse(map['departureTime'] ?? DateTime.now().toIso8601String()),
-      arrivalTime: DateTime.parse(map['arrivalTime'] ?? DateTime.now().toIso8601String()),
       type: map['type'] ?? 'regular',
-      availability: (map['availability'] ?? 1.0).toDouble(),
-      price: (map['price'] ?? 0.0).toDouble(),
+      departureTime: (map['departureTime'] as Timestamp).toDate(),
+      arrivalTime: (map['arrivalTime'] as Timestamp).toDate(),
+      price: (map['price'] as num).toDouble(),
+      availability: (map['availability'] as num).toDouble(),
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
       'name': name,
-      'departureTime': departureTime.toIso8601String(),
-      'arrivalTime': arrivalTime.toIso8601String(),
       'type': type,
-      'availability': availability,
+      'departureTime': Timestamp.fromDate(departureTime),
+      'arrivalTime': Timestamp.fromDate(arrivalTime),
       'price': price,
+      'availability': availability,
     };
   }
 }

@@ -1,39 +1,14 @@
 import 'package:flutter/foundation.dart';
-import 'package:firebase_database/firebase_database.dart';
-import '../services/cache_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/schedule.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class ScheduleProvider with ChangeNotifier {
-  final DatabaseReference _database = FirebaseDatabase.instance.ref();
-  late final CacheService _cacheService;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   List<Schedule> _schedules = [];
   bool _isLoading = false;
   String? _error;
-  bool _initialized = false;
-  String? _lastKey;
-  static const int _pageSize = 10;
-  bool _hasMore = true;
-
-  ScheduleProvider() {
-    _initCache();
-  }
-
-  Future<void> _initCache() async {
-    if (_initialized) return;
-    
-    final prefs = await SharedPreferences.getInstance();
-    _cacheService = CacheService(prefs);
-    _initialized = true;
-
-    final cachedSchedules = _cacheService.getSchedules('schedules');
-    if (cachedSchedules != null) {
-      _schedules = cachedSchedules
-          .map((e) => Schedule.fromMap(e['id'], e))
-          .toList();
-      notifyListeners();
-    }
-  }
+  DocumentSnapshot? _lastDocument;
+  static const int _limit = 10;
 
   List<Schedule> get schedules => _schedules;
   bool get isLoading => _isLoading;
@@ -49,104 +24,130 @@ class ScheduleProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadSchedules({String type = 'regular'}) async {
-    if (!_initialized) await _initCache();
+  Map<String, dynamic>? _convertToMap(Object? data) {
+    if (data == null) return null;
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) {
+      return Map<String, dynamic>.from(data);
+    }
+    return null;
+  }
 
+  Future<void> loadSchedules({String? type}) async {
     try {
       _setLoading(true);
       _setError(null);
-      _hasMore = true;
-      _lastKey = null;
+      _lastDocument = null;
+      _schedules = [];
 
-      final query = _database
-          .child('schedules')
-          .orderByChild('type')
-          .equalTo(type)
-          .limitToFirst(_pageSize);
+      Query query = _firestore.collection('schedules')
+          .orderBy('departureTime')
+          .limit(_limit);
+      
+      if (type != null) {
+        query = query.where('type', isEqualTo: type.toLowerCase());
+      }
 
       final snapshot = await query.get();
-      if (!snapshot.exists) {
+      if (snapshot.docs.isEmpty) {
         _schedules = [];
         return;
       }
 
-      final data = snapshot.value as Map<dynamic, dynamic>;
-      _schedules = data.entries
-          .map((e) => Schedule.fromMap(e.key as String, e.value as Map<dynamic, dynamic>))
-          .toList();
-
-      if (_schedules.isNotEmpty) {
-        _lastKey = _schedules.last.id;
-        await _cacheService.cacheSchedules(
-          'schedules',
-          _schedules.map((s) => {...s.toMap(), 'id': s.id}).toList(),
-        );
-      }
+      _lastDocument = snapshot.docs.last;
+      _schedules = snapshot.docs.map((doc) {
+        final data = _convertToMap(doc.data());
+        if (data == null) return null;
+        return Schedule.fromMap(doc.id, data);
+      }).whereType<Schedule>().toList();
+      
+      notifyListeners();
     } catch (e) {
-      _setError('Gagal memuat jadwal: $e');
+      _setError('Failed to load schedules: $e');
     } finally {
       _setLoading(false);
     }
   }
 
   Future<void> loadMore() async {
-    if (_isLoading || !_hasMore || _lastKey == null) return;
+    if (_isLoading || _lastDocument == null) return;
 
     try {
       _setLoading(true);
       _setError(null);
 
-      // Menggunakan orderByKey() dan startAt() untuk pagination yang benar
-      final query = _database
-          .child('schedules')
-          .orderByKey()
-          .startAt(_lastKey)
-          .limitToFirst(_pageSize + 1); // +1 untuk mengecek item selanjutnya
+      final query = _firestore.collection('schedules')
+          .orderBy('departureTime')
+          .startAfterDocument(_lastDocument!)
+          .limit(_limit);
 
       final snapshot = await query.get();
-      if (!snapshot.exists) {
-        _hasMore = false;
-        return;
-      }
+      if (snapshot.docs.isEmpty) return;
 
-      final data = snapshot.value as Map<dynamic, dynamic>;
-      final List<Schedule> newSchedules = [];
-      
-      // Skip item pertama karena itu adalah item terakhir dari batch sebelumnya
-      var entries = data.entries.toList();
-      if (entries.length > 1) {
-        entries = entries.sublist(1);
-      } else {
-        _hasMore = false;
-        return;
-      }
+      _lastDocument = snapshot.docs.last;
+      final newSchedules = snapshot.docs.map((doc) {
+        final data = _convertToMap(doc.data());
+        if (data == null) return null;
+        return Schedule.fromMap(doc.id, data);
+      }).whereType<Schedule>().toList();
 
-      for (var entry in entries) {
-        final schedule = Schedule.fromMap(
-          entry.key as String, 
-          entry.value as Map<dynamic, dynamic>
-        );
-        if (schedule.type == _schedules.first.type) {
-          newSchedules.add(schedule);
-        }
-      }
-
-      if (newSchedules.isNotEmpty) {
-        _schedules.addAll(newSchedules);
-        _lastKey = newSchedules.last.id;
-        notifyListeners();
-      } else {
-        _hasMore = false;
-      }
+      _schedules.addAll(newSchedules);
+      notifyListeners();
     } catch (e) {
-      _setError('Gagal memuat jadwal tambahan: $e');
+      _setError('Failed to load more schedules: $e');
     } finally {
       _setLoading(false);
     }
   }
 
-  Future<void> refreshSchedules() async {
-    await _cacheService.clearScheduleCache();
-    await loadSchedules();
+  Future<void> searchSchedules({
+    required String fromPort,
+    required String toPort,
+    required DateTime date,
+    required String time,
+    String? type,
+  }) async {
+    try {
+      _setLoading(true);
+      _setError(null);
+
+      // Convert time string to DateTime
+      final timeParts = time.split(':');
+      final searchDate = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        int.parse(timeParts[0]),
+        int.parse(timeParts[1]),
+      );
+
+      // Create start and end time range (±2 hours)
+      final startTime = searchDate.subtract(const Duration(hours: 2));
+      final endTime = searchDate.add(const Duration(hours: 2));
+
+      Query query = _firestore.collection('schedules')
+          .where('fromPort', isEqualTo: fromPort)
+          .where('toPort', isEqualTo: toPort)
+          .where('departureTime', isGreaterThanOrEqualTo: Timestamp.fromDate(startTime))
+          .where('departureTime', isLessThanOrEqualTo: Timestamp.fromDate(endTime))
+          .orderBy('departureTime');
+
+      if (type != null) {
+        query = query.where('type', isEqualTo: type.toLowerCase());
+      }
+
+      final snapshot = await query.get();
+      _schedules = snapshot.docs.map((doc) {
+        final data = _convertToMap(doc.data());
+        if (data == null) return null;
+        return Schedule.fromMap(doc.id, data);
+      }).whereType<Schedule>().toList();
+
+      notifyListeners();
+    } catch (e) {
+      _setError('Failed to search schedules: $e');
+    } finally {
+      _setLoading(false);
+    }
   }
 }

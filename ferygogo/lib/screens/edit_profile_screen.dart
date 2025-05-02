@@ -3,6 +3,10 @@ import 'package:provider/provider.dart';
 import '../providers/profile_provider.dart';
 import '../models/user_profile.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'dart:convert';
 
 class EditProfileScreen extends StatefulWidget {
   final UserProfile profile;
@@ -24,6 +28,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String? _selectedGender;
   String? _selectedIdentityType;
   bool _isOtherIdentityType = false;
+
+  // Add image related variables
+  File? _image;
+  String? _base64Image;
+  final ImagePicker _picker = ImagePicker();
 
   // Define gender options
   final List<String> _genderOptions = ['Laki-laki', 'Perempuan'];
@@ -49,6 +58,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _selectedBirthDate = widget.profile.birthDate;
     _selectedGender = widget.profile.gender;
 
+    // Initialize base64Image from profile if exists
+    if (widget.profile.imageBase64 != null &&
+        widget.profile.imageBase64!.isNotEmpty) {
+      _base64Image = widget.profile.imageBase64;
+    }
+
     // Initialize identity type
     if (widget.profile.identityType.isNotEmpty) {
       if (_identityTypes.contains(widget.profile.identityType)) {
@@ -70,6 +85,53 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
+  Future<void> _pickImage(ImageSource source) async {
+    final pickedFile = await _picker.pickImage(source: source);
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path);
+      });
+      await _compressAndEncodeImage();
+    }
+  }
+
+  Future<void> _compressAndEncodeImage() async {
+    if (_image == null) return;
+    final compressedImage = await FlutterImageCompress.compressWithFile(
+      _image!.path,
+      quality: 50,
+    );
+    if (compressedImage == null) return;
+    setState(() {
+      _base64Image = base64Encode(compressedImage);
+    });
+  }
+
+  void _showImageSourceDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Pilih Sumber Gambar"),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _pickImage(ImageSource.camera);
+            },
+            child: const Text("Kamera"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _pickImage(ImageSource.gallery);
+            },
+            child: const Text("Galeri"),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _selectDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -89,16 +151,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     try {
       await context.read<ProfileProvider>().updateProfile(
-        name: _nameController.text,
-        phoneNumber: _phoneController.text,
-        gender: _selectedGender ?? '',
-        birthDate: _selectedBirthDate,
-        identityType:
-            _isOtherIdentityType
+            name: _nameController.text,
+            phoneNumber: _phoneController.text,
+            gender: _selectedGender ?? '',
+            birthDate: _selectedBirthDate,
+            identityType: _isOtherIdentityType
                 ? _otherIdentityTypeController.text
                 : _selectedIdentityType ?? '',
-        identityNumber: _identityNumberController.text,
-      );
+            identityNumber: _identityNumberController.text,
+            imageBase64: _base64Image, // Add the base64 image
+          );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -108,9 +170,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
       }
     }
   }
@@ -130,6 +192,37 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Profile Image
+              Center(
+                child: GestureDetector(
+                  onTap: _showImageSourceDialog,
+                  child: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.grey[200],
+                      image: _image != null
+                          ? DecorationImage(
+                              image: FileImage(_image!),
+                              fit: BoxFit.cover,
+                            )
+                          : _base64Image != null
+                              ? DecorationImage(
+                                  image: MemoryImage(
+                                      base64Decode(_base64Image!)),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
+                    ),
+                    child: _image == null && _base64Image == null
+                        ? const Icon(Icons.camera_alt,
+                            size: 40, color: Colors.grey)
+                        : null,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
               const Text(
                 'Informasi Akun',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -191,7 +284,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                   child: Text(
                     _selectedBirthDate != null
-                        ? DateFormat('dd MMMM yyyy').format(_selectedBirthDate!)
+                        ? DateFormat('dd MMMM yyyy')
+                            .format(_selectedBirthDate!)
                         : 'Pilih tanggal lahir',
                   ),
                 ),
@@ -205,13 +299,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   labelText: 'Jenis Identitas',
                   border: OutlineInputBorder(),
                 ),
-                items:
-                    _identityTypes.map((String type) {
-                      return DropdownMenuItem<String>(
-                        value: type,
-                        child: Text(type),
-                      );
-                    }).toList(),
+                items: _identityTypes.map((String type) {
+                  return DropdownMenuItem<String>(
+                    value: type,
+                    child: Text(type),
+                  );
+                }).toList(),
                 onChanged: (String? value) {
                   setState(() {
                     _selectedIdentityType = value;

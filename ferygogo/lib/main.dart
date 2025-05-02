@@ -12,10 +12,10 @@ import 'providers/schedule_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/weather_provider.dart';
 import 'providers/navigation_provider.dart';
-import 'screens/splash/splashUI.dart';  
+import 'screens/splash/splashUI.dart';
 import 'screens/Login/login_screen.dart';
 import 'screens/SignUp/signup_screen.dart';
-import 'screens/Home/home_screen.dart';
+import 'screens/home_screen.dart';  // Updated import path
 import 'screens/booking_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/profile_screen.dart';
