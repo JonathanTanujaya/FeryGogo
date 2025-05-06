@@ -1,6 +1,9 @@
-import 'package:ferry_ticket_app/models/schedule.dart';
 import 'package:ferry_ticket_app/providers/schedule_provider.dart';
 import 'package:ferry_ticket_app/providers/weather_provider.dart';
+import 'package:ferry_ticket_app/screens/payment_detail_screen.dart';
+import 'package:ferry_ticket_app/screens/profile_screen.dart';
+import 'package:ferry_ticket_app/models/ticket.dart';
+import 'package:ferry_ticket_app/models/passenger.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -66,6 +69,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Simulated current location - in reality this would come from GPS
   final bool _isNearMerak = true;
+
+  // Add passenger count state
+  final Map<PassengerType, int> _passengerCounts = {
+    PassengerType.child: 0,
+    PassengerType.adult: 1, // Default 1 adult
+    PassengerType.elderly: 0,
+  };
+
+  int get _totalPassengers => _passengerCounts.values.fold(0, (sum, count) => sum + count);
 
   @override
   void initState() {
@@ -207,85 +219,31 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _isSearching = true);
 
     try {
-      final scheduleProvider = context.read<ScheduleProvider>();
-      await scheduleProvider.searchSchedules(
-        fromPort: _fromController.text,
-        toPort: _toController.text,
-        date: _selectedDate,
-        time: _selectedTimeString!,
-        type: _selectedServiceType,
+      // Create a dummy ticket based on the form data
+      final ticket = Ticket(
+        id: "T${DateTime.now().millisecondsSinceEpoch}",
+        routeName: "${_fromController.text} - ${_toController.text}",
+        departurePort: _fromController.text,
+        arrivalPort: _toController.text,
+        departureTime: DateTime.parse("${DateFormat('yyyy-MM-dd').format(_selectedDate)} ${_selectedTimeString!}:00"),
+        arrivalTime: DateTime.parse("${DateFormat('yyyy-MM-dd').format(_selectedDate)} ${_selectedTimeString!}:00").add(const Duration(hours: 1)),
+        price: _selectedServiceType == 'Regular' ? 150000 : 200000,
+        shipName: _selectedServiceType == 'Regular' ? "KMP Gajah Mada" : "KMP Jatra III",
+        ticketClass: _selectedServiceType,
+        seatNumber: 45,
+        status: "Aktif",
+        passengerCounts: Map.from(_passengerCounts),
       );
 
       if (!mounted) return;
 
-      if (scheduleProvider.schedules.isNotEmpty) {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) => DraggableScrollableSheet(
-            initialChildSize: 0.7,
-            maxChildSize: 0.9,
-            minChildSize: 0.5,
-            builder: (context, scrollController) => Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
-                          spreadRadius: 1,
-                          blurRadius: 5,
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Jadwal Tersedia',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.close),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  Expanded(
-                    child: ListView.builder(
-                      controller: scrollController,
-                      padding: const EdgeInsets.all(16),
-                      itemCount: scheduleProvider.schedules.length,
-                      itemBuilder: (context, index) => _ScheduleCard(
-                        schedule: scheduleProvider.schedules[index],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Tidak ada jadwal yang tersedia'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PaymentDetailScreen(ticket: ticket),
+        ),
+      );
+
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -328,14 +286,24 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         actions: [
-          CircleAvatar(
-            backgroundColor: Colors.white,
-            child: Text(
-              'AP',
-              style: TextStyle(color: sapphire),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
+              );
+            },
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: CircleAvatar(
+                backgroundColor: Colors.white,
+                child: Text(
+                  'AP',
+                  style: TextStyle(color: sapphire),
+                ),
+              ),
             ),
           ),
-          const SizedBox(width: 16),
         ],
       ),
       body: SafeArea(
@@ -677,6 +645,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             const SizedBox(height: 16),
+            _buildPassengerCountSelector(),
+            const SizedBox(height: 16),
             const Text('Jenis Layanan', style: TextStyle(color: Colors.grey)),
             Container(
               decoration: BoxDecoration(
@@ -840,7 +810,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed:
-                    _passengerTypeEnabled && _selectedTimeString != null && !_isSearching
+                    _passengerTypeEnabled && _selectedTimeString != null && !_isSearching && _totalPassengers > 0
                         ? _searchSchedules
                         : null,
                 style: ElevatedButton.styleFrom(
@@ -862,7 +832,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       )
-                    : const Text('Cari Tiket'),
+                    : const Text('Lanjutkan Pembayaran'),
               ),
             ),
           ],
@@ -870,127 +840,82 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-}
 
-class _ScheduleCard extends StatelessWidget {
-  final Schedule schedule;
-
-  const _ScheduleCard({required this.schedule});
-
-  @override
-  Widget build(BuildContext context) {
-    final departureTime = DateFormat('HH:mm').format(schedule.departureTime);
-    final arrivalTime = DateFormat('HH:mm').format(schedule.arrivalTime);
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Text(
-                  schedule.name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: schedule.type == 'regular'
-                        ? regularColor
-                        : expressColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    schedule.type.toUpperCase(),
-                    style: TextStyle(
-                      color: schedule.type == 'regular'
-                          ? sapphire
-                          : Colors.brown,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Text(departureTime,
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                Expanded(
-                  child: CustomPaint(
-                    painter: DashedLinePainter(),
-                    child: const SizedBox(height: 2),
-                  ),
-                ),
-                Text(arrivalTime,
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(width: 8),
-                const Icon(Icons.directions_boat, color: sapphire),
-              ],
-            ),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: schedule.availability,
-                backgroundColor: regularColor,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  schedule.availability > 0.8 ? Colors.red : sapphire,
-                ),
-                minHeight: 8,
+  // Add this new method for passenger count selection
+  Widget _buildPassengerCountSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Jumlah Penumpang', style: TextStyle(color: Colors.grey)),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF7F9FC),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            children: [
+              _buildPassengerTypeRow(
+                'Dewasa (17-60 tahun)',
+                PassengerType.adult,
+                minValue: 1,
               ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  NumberFormat.currency(
-                    locale: 'id',
-                    symbol: 'Rp',
-                    decimalDigits: 0,
-                  ).format(schedule.price),
-                  style: const TextStyle(
-                    color: sapphire,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: schedule.availability > 0.8
-                        ? Colors.red.withOpacity(0.1)
-                        : sapphire.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'Tersedia ${(schedule.availability * 100).toInt()}%',
-                    style: TextStyle(
-                      color: schedule.availability > 0.8 ? Colors.red : sapphire,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+              const Divider(height: 1),
+              _buildPassengerTypeRow(
+                'Anak (<17 tahun)',
+                PassengerType.child,
+              ),
+              const Divider(height: 1),
+              _buildPassengerTypeRow(
+                'Lansia (>60 tahun)',
+                PassengerType.elderly,
+              ),
+            ],
+          ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildPassengerTypeRow(String label, PassengerType type, {int minValue = 0}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label),
+          Row(
+            children: [
+              IconButton(
+                onPressed: _passengerCounts[type]! > minValue
+                    ? () {
+                        setState(() {
+                          _passengerCounts[type] = _passengerCounts[type]! - 1;
+                        });
+                      }
+                    : null,
+                icon: const Icon(Icons.remove_circle_outline),
+                color: _passengerCounts[type]! > minValue ? sapphire : Colors.grey,
+              ),
+              Text(
+                _passengerCounts[type].toString(),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _passengerCounts[type] = _passengerCounts[type]! + 1;
+                  });
+                },
+                icon: const Icon(Icons.add_circle_outline),
+                color: sapphire,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
