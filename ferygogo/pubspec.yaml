@@ -37,6 +37,8 @@ flutter:
   assets:
     - assets/boat.png
     - assets/waves.png
+    - asssets/ferygogo.png
+    - assets/fery.png
     - assets/icons/
   
   fonts:
