@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/ticket.dart';
 import '../../models/passenger.dart';
+import 'form_data_screen.dart';
 
 class TicketPopup extends StatelessWidget {
   final VoidCallback onContinue;
@@ -77,7 +78,15 @@ class TicketPopup extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: onContinue,
+                    onPressed: () {
+                      Navigator.pop(context); // Close popup
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => FormDataScreen(ticket: ticket),
+                        ),
+                      );
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0F52BA),
                     ),
