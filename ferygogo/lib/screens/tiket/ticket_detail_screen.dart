@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../models/ticket.dart';
+import '../../models/ticket.dart';
 
 class TicketDetailScreen extends StatelessWidget {
   final Ticket ticket;
@@ -68,10 +68,6 @@ class TicketDetailScreen extends StatelessWidget {
                         'Waktu Keberangkatan',
                         DateFormat('dd MMMM yyyy, HH:mm').format(ticket.departureTime),
                       ),
-                      _buildInfoRow(
-                        'Waktu Kedatangan',
-                        DateFormat('dd MMMM yyyy, HH:mm').format(ticket.arrivalTime),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -80,7 +76,6 @@ class TicketDetailScreen extends StatelessWidget {
                     content: [
                       _buildInfoRow('Nomor Tiket', ticket.id),
                       _buildInfoRow('Kelas', ticket.ticketClass),
-                      _buildInfoRow('Nomor Kursi', ticket.seatNumber.toString()),
                       _buildInfoRow('Status', ticket.status),
                       _buildInfoRow(
                         'Harga',

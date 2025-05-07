@@ -79,34 +79,16 @@ class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Keberangkatan',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                  Text(
-                    DateFormat('dd MMM yyyy, HH:mm').format(widget.ticket.departureTime),
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ],
+              const Text(
+                'Waktu Keberangkatan',
+                style: TextStyle(color: Colors.white70),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const Text(
-                    'Kedatangan',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                  Text(
-                    DateFormat('dd MMM yyyy, HH:mm').format(widget.ticket.arrivalTime),
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ],
+              Text(
+                DateFormat('dd MMM yyyy, HH:mm').format(widget.ticket.departureTime),
+                style: const TextStyle(color: Colors.white),
               ),
             ],
           ),
@@ -413,11 +395,9 @@ class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
           departurePort: widget.ticket.departurePort,
           arrivalPort: widget.ticket.arrivalPort,
           departureTime: widget.ticket.departureTime,
-          arrivalTime: widget.ticket.arrivalTime,
           price: widget.ticket.price,
           shipName: widget.ticket.shipName,
           ticketClass: widget.ticket.ticketClass,
-          seatNumber: widget.ticket.seatNumber,
           status: widget.ticket.status,
           passengerCounts: widget.ticket.passengerCounts,
           passengers: passengers,

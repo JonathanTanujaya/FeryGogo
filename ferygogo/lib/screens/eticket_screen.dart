@@ -132,10 +132,6 @@ class ETicketScreen extends StatelessWidget {
             'Waktu Keberangkatan',
             DateFormat('dd MMMM yyyy, HH:mm').format(ticket.departureTime),
           ),
-          _buildDetailRow(
-            'Waktu Kedatangan',
-            DateFormat('dd MMMM yyyy, HH:mm').format(ticket.arrivalTime),
-          ),
           _buildDetailRow('Kelas', ticket.ticketClass),
           _buildDetailRow('Status', ticket.status),
         ],

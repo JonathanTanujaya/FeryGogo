@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../models/ticket.dart';
+import '../../models/ticket.dart';
 import 'ticket_detail_screen.dart';
 
 class TicketListScreen extends StatelessWidget {
