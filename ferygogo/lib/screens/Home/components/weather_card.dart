@@ -1,16 +1,15 @@
 import 'package:ferry_ticket_app/models/weather_info.dart';
 import 'package:flutter/material.dart';
 import 'package:ferry_ticket_app/providers/weather_provider.dart';
+import 'package:weather_icons/weather_icons.dart';
 
 const Color sapphire = Color(0xFF0F52BA);
 
 class WeatherCard extends StatelessWidget {
   final WeatherProvider weatherProvider;
 
-  const WeatherCard({
-    Key? key,
-    required this.weatherProvider,
-  }) : super(key: key);
+  const WeatherCard({Key? key, required this.weatherProvider})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +44,43 @@ class WeatherCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  IconData _mapIconToWeatherIcon(String iconCode) {
+    switch (iconCode) {
+      case '01d':
+        return WeatherIcons.day_sunny;
+      case '01n':
+        return WeatherIcons.night_clear;
+      case '02d':
+        return WeatherIcons.day_cloudy;
+      case '02n':
+        return WeatherIcons.night_alt_cloudy;
+      case '03d':
+      case '03n':
+        return WeatherIcons.cloud;
+      case '04d':
+      case '04n':
+        return WeatherIcons.cloudy;
+      case '09d':
+      case '09n':
+        return WeatherIcons.showers;
+      case '10d':
+        return WeatherIcons.day_rain;
+      case '10n':
+        return WeatherIcons.night_alt_rain;
+      case '11d':
+      case '11n':
+        return WeatherIcons.thunderstorm;
+      case '13d':
+      case '13n':
+        return WeatherIcons.snow;
+      case '50d':
+      case '50n':
+        return WeatherIcons.fog;
+      default:
+        return WeatherIcons.na; // Not available
+    }
   }
 
   Widget _buildErrorCard() {
@@ -136,17 +172,17 @@ class WeatherCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: sapphire.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       weatherInfo.description,
-                      style: TextStyle(
-                        color: sapphire,
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: sapphire, fontSize: 14),
                     ),
                   ),
                 ],
@@ -163,12 +199,10 @@ class WeatherCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
-              child: Image.network(
-                'https://www.meteosource.com/static/img/ico/${weatherInfo.icon}.svg',
-                width: 40,
-                height: 40,
-                errorBuilder: (context, error, stackTrace) =>
-                    const Icon(Icons.wb_sunny, size: 40, color: Colors.orange),
+              child: BoxedIcon(
+                _mapIconToWeatherIcon(weatherInfo.icon),
+                size: 40,
+                color: Colors.orange[700],
               ),
             ),
           ),
@@ -209,20 +243,9 @@ class WeatherCard extends StatelessWidget {
       children: [
         Icon(icon, color: sapphire),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 12,
-          ),
-        ),
+        Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
         const SizedBox(height: 2),
-        Text(
-          value,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
       ],
     );
   }

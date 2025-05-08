@@ -67,19 +67,23 @@ class SplashScreenLogic {
       if (!mounted) return;
 
       if (auth.isAuthenticated) {
-        print('SplashScreen: User authenticated, navigating to /home');
-        Navigator.pushReplacementNamed(context, '/home');
-      } else {
-        print('SplashScreen: User not authenticated, navigating to /login');
-        Navigator.pushReplacementNamed(context, '/login');
-      }
-    } catch (e) {
-      print('SplashScreen: Error during initialization - $e');
-      if (mounted) {
-        ErrorHandler.showError(context, 'Gagal memuat aplikasi. Silakan coba lagi.');
-        Navigator.pushReplacementNamed(context, '/login');
-      }
+  print('SplashScreen: User authenticated');
+
+  if (mounted) {
+    bool hasPermission = await LocationPermissionHandler.requestLocationPermission(context);
+
+    if (mounted && hasPermission) {
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      // Jika tidak diizinkan, tetap arahkan ke login (opsional)
+      Navigator.pushReplacementNamed(context, '/login');
     }
+  }
+} else {
+  print('SplashScreen: User not authenticated, navigating to /login');
+  Navigator.pushReplacementNamed(context, '/login');
+}
+
   }
 
   void dispose() {
@@ -87,4 +91,5 @@ class SplashScreenLogic {
     timeoutTimer?.cancel();
     controller.dispose();
   }
+}
 }
