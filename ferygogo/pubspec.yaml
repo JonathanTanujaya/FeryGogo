@@ -27,6 +27,7 @@ dependencies:
   google_fonts: ^6.2.1
   flutter_image_compress: ^2.1.0
   qr_flutter: ^4.1.0
+  weather_icons: ^3.0.0
 
 dev_dependencies:
   flutter_test:
@@ -37,7 +38,7 @@ flutter:
   assets:
     - assets/boat.png
     - assets/waves.png
-    - asssets/ferygogo.png
+    - assets/ferygogo.png
     - assets/fery.png
     - assets/icons/
   
