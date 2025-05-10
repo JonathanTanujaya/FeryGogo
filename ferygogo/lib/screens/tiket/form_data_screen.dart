@@ -15,12 +15,28 @@ class FormDataScreen extends StatefulWidget {
 class _FormDataScreenState extends State<FormDataScreen> {
   final _formKey = GlobalKey<FormState>();
   final List<PassengerFormData> _passengers = [];
+  final bookerNameController = TextEditingController();
+  final bookerPhoneController = TextEditingController();
+  final bookerEmailController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _initializePassengerForms();
-  }  void _initializePassengerForms() {
+  }
+
+  @override
+  void dispose() {
+    bookerNameController.dispose();
+    bookerPhoneController.dispose();
+    bookerEmailController.dispose();
+    for (var passenger in _passengers) {
+      passenger.dispose();
+    }
+    super.dispose();
+  }
+
+  void _initializePassengerForms() {
     print('Initializing passenger forms...');
     print('Passenger counts: ${widget.ticket.passengerCounts}');
     
@@ -46,14 +62,27 @@ class _FormDataScreenState extends State<FormDataScreen> {
       ),
       body: Form(
         key: _formKey,
-        child: ListView.builder(
+        child: ListView(
           padding: const EdgeInsets.all(16),
-          itemCount: _passengers.length,
-          itemBuilder: (context, index) {
-            return _buildPassengerForm(index);
-          },
+          children: [
+            _buildBookerInfoForm(),
+            const SizedBox(height: 24),
+            const Text(
+              'Data Penumpang',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ..._passengers.asMap().entries.map((entry) {
+              return _buildPassengerForm(entry.key);
+            }),
+            const SizedBox(height: 16),
+          ],
         ),
-      ),      bottomNavigationBar: Padding(
+      ),
+      bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16),
         child: ElevatedButton(
           onPressed: _submitForm,
@@ -72,6 +101,74 @@ class _FormDataScreenState extends State<FormDataScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBookerInfoForm() {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Informasi Pemesan',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: bookerNameController,
+              decoration: const InputDecoration(
+                labelText: 'Nama Pemesan',
+                border: OutlineInputBorder(),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Nama pemesan tidak boleh kosong';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: bookerPhoneController,
+              decoration: const InputDecoration(
+                labelText: 'Nomor Telepon',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.phone,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Nomor telepon tidak boleh kosong';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: bookerEmailController,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.emailAddress,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Email tidak boleh kosong';
+                }
+                if (!value.contains('@')) {
+                  return 'Email tidak valid';
+                }
+                return null;
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -129,41 +226,6 @@ class _FormDataScreenState extends State<FormDataScreen> {
                 },
               ),
             ],
-            if (index == 0) ...[
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: passenger.phoneController,
-                decoration: const InputDecoration(
-                  labelText: 'Nomor Telepon',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.phone,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Nomor telepon tidak boleh kosong';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: passenger.emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Email tidak boleh kosong';
-                  }
-                  if (!value.contains('@')) {
-                    return 'Email tidak valid';
-                  }
-                  return null;
-                },
-              ),
-            ],
           ],
         ),
       ),
@@ -201,7 +263,9 @@ class _FormDataScreenState extends State<FormDataScreen> {
         return null;
       },
     );
-  }  String _getPassengerTypeLabel(PassengerType type) {
+  }
+
+  String _getPassengerTypeLabel(PassengerType type) {
     return switch (type) {
       PassengerType.child => 'Anak',
       PassengerType.adult => 'Dewasa',
@@ -210,7 +274,6 @@ class _FormDataScreenState extends State<FormDataScreen> {
   }
 
   void _submitForm() {
-    // Debug print untuk membantu troubleshooting
     print('Starting form submission...');
     print('Number of passengers: ${_passengers.length}');
 
@@ -226,8 +289,6 @@ class _FormDataScreenState extends State<FormDataScreen> {
           final passenger = Passenger(
             name: form.nameController.text,
             idNumber: form.idNumberController.text,
-            phoneNumber: form.type == PassengerType.adult ? form.phoneController.text : '',
-            email: form.type == PassengerType.adult ? form.emailController.text : '',
             type: form.type,
             birthDate: form.birthDate,
           );
@@ -241,8 +302,6 @@ class _FormDataScreenState extends State<FormDataScreen> {
           );
           return;
         }
-
-        print('Created ${passengers.length} passenger objects successfully');
 
         // Buat Map passengerCounts yang baru berdasarkan data aktual
         final Map<PassengerType, int> actualCounts = {
@@ -268,6 +327,9 @@ class _FormDataScreenState extends State<FormDataScreen> {
           status: widget.ticket.status,
           passengerCounts: actualCounts,
           passengers: passengers,
+          bookerName: bookerNameController.text,
+          bookerPhone: bookerPhoneController.text,
+          bookerEmail: bookerEmailController.text,
         );
 
         // Navigasi ke halaman pembayaran

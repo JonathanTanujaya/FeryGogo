@@ -12,6 +12,9 @@ class Ticket {
   final String status;
   final Map<PassengerType, int> passengerCounts;
   final List<Passenger> passengers;
+  final String bookerName;
+  final String bookerPhone;
+  final String bookerEmail;
 
   Ticket({
     required this.id,
@@ -25,6 +28,9 @@ class Ticket {
     required this.status,
     this.passengerCounts = const {},
     this.passengers = const [],
+    this.bookerName = '',
+    this.bookerPhone = '',
+    this.bookerEmail = '',
   });
 
   Map<String, dynamic> toJson() => {
@@ -39,6 +45,9 @@ class Ticket {
     'status': status,
     'passengerCounts': passengerCounts.map((k, v) => MapEntry(k.toString().split('.').last, v)),
     'passengers': passengers.map((p) => p.toJson()).toList(),
+    'bookerName': bookerName,
+    'bookerPhone': bookerPhone,
+    'bookerEmail': bookerEmail,
   };
 
   // Dummy data generator

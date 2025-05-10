@@ -14,24 +14,7 @@ class PaymentDetailScreen extends StatefulWidget {
 }
 
 class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final List<PassengerForm> _passengerForms = [];
   bool _isProcessing = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeForms();
-  }
-
-  void _initializeForms() {
-    widget.ticket.passengerCounts.forEach((key, count) {
-      final type = PassengerType.values.firstWhere((t) => t.toString() == 'PassengerType.$key');
-      for (int i = 0; i < count; i++) {
-        _passengerForms.add(PassengerForm(type: type));
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,15 +25,13 @@ class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              _buildTicketSummary(),
-              _buildPassengerForms(),
-              _buildPaymentSummary(),
-            ],
-          ),
+        child: Column(
+          children: [
+            _buildTicketSummary(),
+            _buildPassengerInfo(),
+            _buildPaymentSummary(),
+            _buildBookerInfo(),
+          ],
         ),
       ),
       bottomNavigationBar: _buildBottomBar(),
@@ -97,164 +78,155 @@ class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
     );
   }
 
-  Widget _buildPassengerForms() {
+  Widget _buildPassengerInfo() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Data Penumpang',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                '${widget.ticket.passengers.length} Penumpang',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: widget.ticket.passengers.length,
+            itemBuilder: (context, index) {
+              final passenger = widget.ticket.passengers[index];
+              final isChild = passenger.type == PassengerType.child;
+              
+              return Card(
+                elevation: 2,
+                margin: const EdgeInsets.only(bottom: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: const Color(0xFF0F52BA).withOpacity(0.1),
+                                child: Text(
+                                  passenger.name.substring(0, 1).toUpperCase(),
+                                  style: const TextStyle(
+                                    color: Color(0xFF0F52BA),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    passenger.name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  Text(
+                                    _getPassengerTypeLabel(passenger.type),
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0F52BA).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              'Penumpang ${index + 1}',
+                              style: const TextStyle(
+                                color: Color(0xFF0F52BA),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 24),
+                      _buildInfoRow(
+                        isChild ? 'Tanggal Lahir' : 'Nomor KTP',
+                        isChild && passenger.birthDate != null
+                            ? DateFormat('dd MMM yyyy').format(passenger.birthDate!)
+                            : passenger.idNumber,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBookerInfo() {
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Data Penumpang',
+            'Informasi Pemesan',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 16),
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _passengerForms.length,
-            separatorBuilder: (context, index) => const Divider(height: 32),
-            itemBuilder: (context, index) {
-              return _buildPassengerFormFields(
-                index + 1,
-                _passengerForms[index],
-              );
-            },
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  _buildInfoRow('Nama', widget.ticket.bookerName),
+                  _buildInfoRow('Telepon', widget.ticket.bookerPhone),
+                  _buildInfoRow('Email', widget.ticket.bookerEmail),
+                ],
+              ),
+            ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildPassengerFormFields(int number, PassengerForm form) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Penumpang $number - ${_getPassengerTypeLabel(form.type)}',
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: form.nameController,
-          decoration: const InputDecoration(
-            labelText: 'Nama Lengkap',
-            border: OutlineInputBorder(),
-          ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Nama tidak boleh kosong';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        if (form.type == PassengerType.child) ...[
-          _buildDateField(
-            label: 'Tanggal Lahir',
-            controller: form.idNumberController,
-            onTap: () async {
-              final date = await showDatePicker(
-                context: context,
-                initialDate: DateTime.now().subtract(const Duration(days: 365 * 5)),
-                firstDate: DateTime.now().subtract(const Duration(days: 365 * 17)),
-                lastDate: DateTime.now(),
-              );
-              if (date != null) {
-                form.idNumberController.text = DateFormat('ddMMyyyy').format(date);
-                form.birthDate = date;
-              }
-            },
-          ),
-        ] else ...[
-          TextFormField(
-            controller: form.idNumberController,
-            decoration: const InputDecoration(
-              labelText: 'Nomor KTP',
-              border: OutlineInputBorder(),
-            ),
-            keyboardType: TextInputType.number,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Nomor KTP tidak boleh kosong';
-              }
-              if (value.length != 16) {
-                return 'Nomor KTP harus 16 digit';
-              }
-              return null;
-            },
-          ),
-        ],
-        if (number == 1) ...[
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: form.phoneController,
-            decoration: const InputDecoration(
-              labelText: 'Nomor Telepon',
-              border: OutlineInputBorder(),
-            ),
-            keyboardType: TextInputType.phone,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Nomor telepon tidak boleh kosong';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: form.emailController,
-            decoration: const InputDecoration(
-              labelText: 'Email',
-              border: OutlineInputBorder(),
-            ),
-            keyboardType: TextInputType.emailAddress,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Email tidak boleh kosong';
-              }
-              if (!value.contains('@')) {
-                return 'Email tidak valid';
-              }
-              return null;
-            },
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildDateField({
-    required String label,
-    required TextEditingController controller,
-    required VoidCallback onTap,
-  }) {
-    return TextFormField(
-      controller: controller,
-      readOnly: true,
-      onTap: onTap,
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-        suffixIcon: const Icon(Icons.calendar_today),
-      ),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Tanggal lahir tidak boleh kosong';
-        }
-        return null;
-      },
     );
   }
 
   Widget _buildPaymentSummary() {
-    final serviceFee = 2500.0 * _passengerForms.length;
-    final totalAmount = (widget.ticket.price * _passengerForms.length) + serviceFee;
+    final passengerCount = widget.ticket.passengers.length;
+    final serviceFee = 2500.0 * passengerCount;
+    final totalAmount = (widget.ticket.price * passengerCount) + serviceFee;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -269,51 +241,80 @@ class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Harga Tiket (${_passengerForms.length}x)'),
-              Text(
-                NumberFormat.currency(
-                  locale: 'id',
-                  symbol: 'Rp ',
-                  decimalDigits: 0,
-                ).format(widget.ticket.price * _passengerForms.length),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Harga Tiket ($passengerCount penumpang)'),
+                      Text(
+                        NumberFormat.currency(
+                          locale: 'id',
+                          symbol: 'Rp ',
+                          decimalDigits: 0,
+                        ).format(widget.ticket.price * passengerCount),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Biaya Layanan ($passengerCount x Rp 2.500)'),
+                      Text(
+                        NumberFormat.currency(
+                          locale: 'id',
+                          symbol: 'Rp ',
+                          decimalDigits: 0,
+                        ).format(serviceFee),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Total',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        NumberFormat.currency(
+                          locale: 'id',
+                          symbol: 'Rp ',
+                          decimalDigits: 0,
+                        ).format(totalAmount),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Biaya Layanan (${_passengerForms.length}x)'),
-              Text(
-                NumberFormat.currency(
-                  locale: 'id',
-                  symbol: 'Rp ',
-                  decimalDigits: 0,
-                ).format(serviceFee),
-              ),
-            ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: TextStyle(color: Colors.grey[600]),
+            ),
           ),
-          const Divider(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Total',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text(
-                NumberFormat.currency(
-                  locale: 'id',
-                  symbol: 'Rp ',
-                  decimalDigits: 0,
-                ).format(totalAmount),
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
+          const Text(': '),
+          Expanded(child: Text(value)),
         ],
       ),
     );
@@ -358,86 +359,38 @@ class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
   }
 
   String _getPassengerTypeLabel(PassengerType type) {
-    switch (type) {
-      case PassengerType.child:
-        return 'Anak';
-      case PassengerType.adult:
-        return 'Dewasa';
-      case PassengerType.elderly:
-        return 'Lansia';
-    }
+    return switch (type) {
+      PassengerType.child => 'Anak',
+      PassengerType.adult => 'Dewasa',
+      PassengerType.elderly => 'Lansia',
+    };
   }
 
   Future<void> _processPayment() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      setState(() => _isProcessing = true);
+    setState(() => _isProcessing = true);
 
-      try {
-        // Simulate payment processing
-        await Future.delayed(const Duration(seconds: 2));
+    try {
+      // Simulate payment processing
+      await Future.delayed(const Duration(seconds: 2));
 
-        if (!mounted) return;
+      if (!mounted) return;
 
-        // Create passenger list from forms
-        final passengers = _passengerForms.map((form) => Passenger(
-          name: form.nameController.text,
-          idNumber: form.idNumberController.text,
-          phoneNumber: form.phoneController.text,
-          email: form.emailController.text,
-          type: form.type,
-          birthDate: form.birthDate,
-        )).toList();
-
-        // Create updated ticket with passengers
-        final updatedTicket = Ticket(
-          id: widget.ticket.id,
-          routeName: widget.ticket.routeName,
-          departurePort: widget.ticket.departurePort,
-          arrivalPort: widget.ticket.arrivalPort,
-          departureTime: widget.ticket.departureTime,
-          price: widget.ticket.price,
-          shipName: widget.ticket.shipName,
-          ticketClass: widget.ticket.ticketClass,
-          status: widget.ticket.status,
-          passengerCounts: widget.ticket.passengerCounts,
-          passengers: passengers,
-        );
-
-        // Navigate to e-ticket screen
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ETicketScreen(ticket: updatedTicket),
-          ),
-        );
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        setState(() => _isProcessing = false);
-      }
+      // Navigate to e-ticket screen
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ETicketScreen(ticket: widget.ticket),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      setState(() => _isProcessing = false);
     }
-  }
-}
-
-class PassengerForm {
-  final PassengerType type;
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController idNumberController = TextEditingController();
-  final TextEditingController phoneController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  DateTime? birthDate;
-
-  PassengerForm({required this.type});
-
-  void dispose() {
-    nameController.dispose();
-    idNumberController.dispose();
-    phoneController.dispose();
-    emailController.dispose();
   }
 }

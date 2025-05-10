@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'dart:convert';
-import '../models/ticket.dart';
-import '../models/passenger.dart';
-import 'Home/home_screen.dart';
+import '../../models/ticket.dart';
+import '../../models/passenger.dart';
 
 class ETicketScreen extends StatelessWidget {
   final Ticket ticket;
@@ -13,37 +12,20 @@ class ETicketScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        // Navigate to home when back button is pressed
-        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
-        return false;
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('E-Tiket'),
-          backgroundColor: const Color(0xFF0F52BA),
-          foregroundColor: Colors.white,
-          automaticallyImplyLeading: false, // Remove back button
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.home),
-              onPressed: () {
-                Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
-              },
-            ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('E-Tiket'),
+        backgroundColor: const Color(0xFF0F52BA),
+        foregroundColor: Colors.white,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _buildTicketHeader(),
+            _buildQRCode(),
+            _buildTicketDetails(),
+            _buildPassengerList(),
           ],
-        ),
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              _buildTicketHeader(),
-              _buildQRCode(),
-              _buildTicketDetails(),
-              _buildPassengerList(),
-              _buildBookerInfo(),
-            ],
-          ),
         ),
       ),
     );
@@ -152,14 +134,6 @@ class ETicketScreen extends StatelessWidget {
           ),
           _buildDetailRow('Kelas', ticket.ticketClass),
           _buildDetailRow('Status', ticket.status),
-          _buildDetailRow(
-            'Total Harga',
-            NumberFormat.currency(
-              locale: 'id',
-              symbol: 'Rp ',
-              decimalDigits: 0,
-            ).format(ticket.price * ticket.passengers.length),
-          ),
         ],
       ),
     );
@@ -187,26 +161,23 @@ class ETicketScreen extends StatelessWidget {
               final passenger = ticket.passengers[index];
               final isChild = passenger.type == PassengerType.child;
               
+              String subtitle;
+              if (isChild && passenger.birthDate != null) {
+                subtitle = 'Tanggal Lahir: ${DateFormat('dd/MM/yyyy').format(passenger.birthDate!)}';
+              } else {
+                subtitle = 'ID: ${passenger.idNumber}';
+              }
+
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: const Color(0xFF0F52BA).withOpacity(0.1),
-                    child: Text(
-                      passenger.name.substring(0, 1).toUpperCase(),
-                      style: const TextStyle(
-                        color: Color(0xFF0F52BA),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
                   title: Text(passenger.name),
-                  subtitle: Text(_getPassengerTypeLabel(passenger.type)),
+                  subtitle: Text(subtitle),
                   trailing: Text(
-                    isChild && passenger.birthDate != null
-                        ? DateFormat('dd/MM/yyyy').format(passenger.birthDate!)
-                        : passenger.idNumber,
-                    style: const TextStyle(color: Colors.grey),
+                    _getPassengerTypeLabel(passenger.type),
+                    style: TextStyle(
+                      color: isChild ? Colors.blue : Colors.grey[600],
+                    ),
                   ),
                 ),
               );
@@ -217,35 +188,15 @@ class ETicketScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBookerInfo() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Informasi Pemesan',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _buildDetailRow('Nama', ticket.bookerName),
-                  _buildDetailRow('Telepon', ticket.bookerPhone),
-                  _buildDetailRow('Email', ticket.bookerEmail),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  String _getPassengerTypeLabel(PassengerType type) {
+    switch (type) {
+      case PassengerType.child:
+        return 'Anak';
+      case PassengerType.adult:
+        return 'Dewasa';
+      case PassengerType.elderly:
+        return 'Lansia';
+    }
   }
 
   Widget _buildDetailRow(String label, String value) {
@@ -254,36 +205,26 @@ class ETicketScreen extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 140,
+          Expanded(
+            flex: 2,
             child: Text(
               label,
               style: TextStyle(
                 color: Colors.grey[600],
-                fontSize: 14,
               ),
             ),
           ),
-          const Text(': '),
           Expanded(
+            flex: 3,
             child: Text(
               value,
               style: const TextStyle(
                 fontWeight: FontWeight.w500,
-                fontSize: 14,
               ),
             ),
           ),
         ],
       ),
     );
-  }
-
-  String _getPassengerTypeLabel(PassengerType type) {
-    return switch (type) {
-      PassengerType.child => 'Anak',
-      PassengerType.adult => 'Dewasa',
-      PassengerType.elderly => 'Lansia',
-    };
   }
 }
