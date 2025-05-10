@@ -29,11 +29,8 @@ dependencies:
   qr_flutter: ^4.1.0
   permission_handler: ^11.0.1
   geolocator: ^10.0.1
-<<<<<<< HEAD
   flutter_launcher_icons: ^0.14.3
-=======
   weather_icons: ^3.0.0
->>>>>>> 0d5588c60024622c603633d54a67a8fe68c5c6e1
 
 dev_dependencies:
   flutter_test:

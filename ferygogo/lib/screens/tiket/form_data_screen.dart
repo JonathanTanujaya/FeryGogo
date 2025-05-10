@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/ticket.dart';
 import '../../models/passenger.dart';
-import '../payment_detail_screen.dart';
+import 'payment_detail_screen.dart';
 
 class FormDataScreen extends StatefulWidget {
   final Ticket ticket;
@@ -20,18 +20,20 @@ class _FormDataScreenState extends State<FormDataScreen> {
   void initState() {
     super.initState();
     _initializePassengerForms();
-  }
-
-  void _initializePassengerForms() {
-    widget.ticket.passengerCounts.forEach((type, count) {
-      for (int i = 0; i < count; i++) {
-        _passengers.add(PassengerFormData(
-          type: PassengerType.values.firstWhere(
-            (t) => t.toString().split('.').last == type,
-          ),
-        ));
+  }  void _initializePassengerForms() {
+    print('Initializing passenger forms...');
+    print('Passenger counts: ${widget.ticket.passengerCounts}');
+    
+    for (var entry in widget.ticket.passengerCounts.entries) {
+      var type = entry.key;
+      var count = entry.value;
+      print('Processing type: $type, count: $count');
+      
+      for (var i = 0; i < count; i++) {
+        _passengers.add(PassengerFormData(type: type));
+        print('Added passenger form for type: $type');
       }
-    });
+    }
   }
 
   @override
@@ -51,16 +53,25 @@ class _FormDataScreenState extends State<FormDataScreen> {
             return _buildPassengerForm(index);
           },
         ),
-      ),
-      bottomNavigationBar: Padding(
+      ),      bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16),
         child: ElevatedButton(
           onPressed: _submitForm,
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF0F52BA),
+            foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
-          child: const Text('Lanjutkan ke Pembayaran'),
+          child: const Text(
+            'Lanjutkan ke Pembayaran',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
       ),
     );
@@ -190,63 +201,107 @@ class _FormDataScreenState extends State<FormDataScreen> {
         return null;
       },
     );
-  }
-
-  String _getPassengerTypeLabel(PassengerType type) {
-    switch (type) {
-      case PassengerType.child:
-        return 'Anak';
-      case PassengerType.adult:
-        return 'Dewasa';
-      case PassengerType.elderly:
-        return 'Lansia';
-    }
+  }  String _getPassengerTypeLabel(PassengerType type) {
+    return switch (type) {
+      PassengerType.child => 'Anak',
+      PassengerType.adult => 'Dewasa',
+      PassengerType.elderly => 'Lansia',
+    };
   }
 
   void _submitForm() {
+    // Debug print untuk membantu troubleshooting
+    print('Starting form submission...');
+    print('Number of passengers: ${_passengers.length}');
+
     if (_formKey.currentState?.validate() ?? false) {
-      final passengers = _passengers.map((form) => Passenger(
-        name: form.nameController.text,
-        idNumber: form.idNumberController.text,
-        phoneNumber: form.phoneController.text,
-        email: form.emailController.text,
-        type: form.type,
-        birthDate: form.birthDate,
-      )).toList();
+      try {
+        final passengers = <Passenger>[];
+        
+        // Iterate through each passenger form
+        for (var form in _passengers) {
+          print('Processing passenger type: ${form.type}');
+          
+          // Create passenger object based on type
+          final passenger = Passenger(
+            name: form.nameController.text,
+            idNumber: form.idNumberController.text,
+            phoneNumber: form.type == PassengerType.adult ? form.phoneController.text : '',
+            email: form.type == PassengerType.adult ? form.emailController.text : '',
+            type: form.type,
+            birthDate: form.birthDate,
+          );
+          
+          passengers.add(passenger);
+        }
 
-      final updatedTicket = Ticket(
-        id: widget.ticket.id,
-        routeName: widget.ticket.routeName,
-        departurePort: widget.ticket.departurePort,
-        arrivalPort: widget.ticket.arrivalPort,
-        departureTime: widget.ticket.departureTime,
-        price: widget.ticket.price,
-        shipName: widget.ticket.shipName,
-        ticketClass: widget.ticket.ticketClass,
-        status: widget.ticket.status,
-        passengerCounts: widget.ticket.passengerCounts,
-        passengers: passengers,
-      );
+        if (passengers.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Data penumpang tidak boleh kosong')),
+          );
+          return;
+        }
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => PaymentDetailScreen(ticket: updatedTicket),
-        ),
-      );
+        print('Created ${passengers.length} passenger objects successfully');
+
+        // Buat Map passengerCounts yang baru berdasarkan data aktual
+        final Map<PassengerType, int> actualCounts = {
+          PassengerType.adult: 0,
+          PassengerType.child: 0,
+          PassengerType.elderly: 0,
+        };
+
+        // Hitung jumlah masing-masing tipe penumpang
+        for (var passenger in passengers) {
+          actualCounts[passenger.type] = (actualCounts[passenger.type] ?? 0) + 1;
+        }
+
+        final updatedTicket = Ticket(
+          id: widget.ticket.id,
+          routeName: widget.ticket.routeName,
+          departurePort: widget.ticket.departurePort,
+          arrivalPort: widget.ticket.arrivalPort,
+          departureTime: widget.ticket.departureTime,
+          price: widget.ticket.price,
+          shipName: widget.ticket.shipName,
+          ticketClass: widget.ticket.ticketClass,
+          status: widget.ticket.status,
+          passengerCounts: actualCounts,
+          passengers: passengers,
+        );
+
+        // Navigasi ke halaman pembayaran
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PaymentDetailScreen(ticket: updatedTicket),
+            ),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Terjadi kesalahan: $e')),
+        );
+      }
     }
   }
 }
 
 class PassengerFormData {
   final PassengerType type;
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController idNumberController = TextEditingController();
-  final TextEditingController phoneController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
+  late final TextEditingController nameController;
+  late final TextEditingController idNumberController;
+  late final TextEditingController phoneController;
+  late final TextEditingController emailController;
   DateTime? birthDate;
 
-  PassengerFormData({required this.type});
+  PassengerFormData({required this.type}) {
+    nameController = TextEditingController();
+    idNumberController = TextEditingController();
+    phoneController = TextEditingController();
+    emailController = TextEditingController();
+  }
 
   void dispose() {
     nameController.dispose();

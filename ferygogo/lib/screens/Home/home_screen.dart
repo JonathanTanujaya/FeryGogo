@@ -3,14 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
+import 'package:geolocator/geolocator.dart';
 
 import 'package:ferry_ticket_app/providers/schedule_provider.dart';
 import 'package:ferry_ticket_app/providers/weather_provider.dart';
-import 'package:ferry_ticket_app/providers/profile_provider.dart';
-import 'package:ferry_ticket_app/screens/payment_detail_screen.dart';
-import 'package:ferry_ticket_app/screens/profile_screen.dart';
 import 'package:ferry_ticket_app/models/ticket.dart';
 import 'package:ferry_ticket_app/models/passenger.dart';
+import 'package:ferry_ticket_app/screens/tiket/form_data_screen.dart';
 
 import 'components/weather_card.dart';
 import 'components/trip_type_selector.dart';
@@ -54,8 +53,14 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _serviceTypeEnabled = false;
   bool _passengerTypeEnabled = false;
 
-  // Simulated current location - in reality this would come from GPS
-  final bool _isNearMerak = true;
+  // Koordinat pelabuhan
+  static const double merakLat = -6.1141;
+  static const double merakLong = 105.8172;
+  static const double bakauheniLat = -5.8622;
+  static const double bakauheniLong = 105.7517;
+
+  Position? _currentPosition;
+  bool _isNearMerak = true; // Default ke Merak
 
   // Add passenger count state
   final Map<PassengerType, int> _passengerCounts = {
@@ -71,32 +76,153 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    _fromController.text = _isNearMerak ? port1 : port2;
-    _toController.text = _isNearMerak ? port2 : port1;
-    _updateAvailableTime();
+    _initializeScreen();
     _fromController.addListener(_updateFormState);
     _toController.addListener(_updateFormState);
+  }
 
-    // Initialize weather data
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeWeather();
+  Future<void> _initializeScreen() async {
+    await _getCurrentLocation();
+    await _initializeWeather();
+    await _loadInitialData();
+    setState(() {
+      _isInitialized = true;
     });
   }
 
-  Future<void> _initializeWeather() async {
-    final weatherProvider = context.read<WeatherProvider>();
-    await weatherProvider.fetchWeatherFromApi();
-    if (mounted && weatherProvider.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(weatherProvider.error!),
-          action: SnackBarAction(
-            label: 'Coba Lagi',
-            onPressed: () => weatherProvider.fetchWeatherFromApi(),
+  Future<bool> _handleLocationPermission() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // Cek apakah layanan lokasi aktif
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Layanan lokasi dinonaktifkan. Silakan aktifkan untuk melanjutkan.')));
+      }
+      // Buka pengaturan lokasi
+      await Geolocator.openLocationSettings();
+      return false;
+    }
+
+    // Cek izin lokasi
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      // Minta izin lokasi dengan dialog default
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Izin lokasi ditolak')));
+        }
+        return false;
+      }
+    }
+
+    // Jika izin ditolak secara permanen
+    if (permission == LocationPermission.deniedForever) {
+      if (mounted) {
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) => AlertDialog(
+            title: const Text('Izin Lokasi Diperlukan'),
+            content: const Text(
+                'Aplikasi membutuhkan akses lokasi untuk memberikan layanan terbaik. Mohon izinkan akses lokasi di pengaturan.'),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('Batal'),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              TextButton(
+                child: const Text('Buka Pengaturan'),
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await Geolocator.openAppSettings();
+                },
+              ),
+            ],
           ),
-          duration: const Duration(seconds: 5),
-        ),
+        );
+      }
+      return false;
+    }
+
+    return true;
+  }
+
+  Future<void> _getCurrentLocation() async {
+    try {
+      // Minta izin lokasi terlebih dahulu
+      final hasPermission = await _handleLocationPermission();
+      
+      if (!hasPermission) {
+        // Jika izin ditolak, gunakan Merak sebagai default
+        setState(() {
+          _isNearMerak = true;
+          _fromController.text = port1; // Merak
+          _toController.text = port2; // Bakauheni
+        });
+        return;
+      }
+
+      // Dapatkan posisi user
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
       );
+
+      setState(() {
+        _currentPosition = position;
+
+        // Hitung jarak ke masing-masing pelabuhan
+        double distanceToMerak = Geolocator.distanceBetween(
+          position.latitude,
+          position.longitude,
+          merakLat,
+          merakLong,
+        );
+
+        double distanceToBakauheni = Geolocator.distanceBetween(
+          position.latitude,
+          position.longitude,
+          bakauheniLat,
+          bakauheniLong,
+        );
+
+        // Tentukan pelabuhan terdekat
+        _isNearMerak = distanceToMerak < distanceToBakauheni;
+
+        // Set pelabuhan awal berdasarkan lokasi terdekat
+        if (_isNearMerak) {
+          _fromController.text = port1; // Merak
+          _toController.text = port2; // Bakauheni
+        } else {
+          _fromController.text = port2; // Bakauheni
+          _toController.text = port1; // Merak
+        }
+      });
+
+      // Update weather info berdasarkan lokasi
+      if (mounted) {
+        final weatherProvider = Provider.of<WeatherProvider>(context, listen: false);
+        await weatherProvider.loadWeatherInfo(isNearMerak: _isNearMerak);
+      }
+    } catch (e) {
+      print('Error getting location: $e');
+      // Fallback ke Merak sebagai default
+      setState(() {
+        _isNearMerak = true;
+        _fromController.text = port1;
+        _toController.text = port2;
+      });
+    }
+  }
+
+  Future<void> _initializeWeather() async {
+    if (mounted) {
+      final weatherProvider = Provider.of<WeatherProvider>(context, listen: false);
+      await weatherProvider.loadWeatherInfo(isNearMerak: _isNearMerak);
     }
   }
 
@@ -112,17 +238,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadInitialData() async {
-    if (_isInitialized) return;
-
-    final scheduleProvider = context.read<ScheduleProvider>();
-    final weatherProvider = context.read<WeatherProvider>();
-
-    await Future.wait([
-      scheduleProvider.loadSchedules(type: _selectedServiceType),
-      weatherProvider.loadWeatherInfo(),
-    ]);
-
-    _isInitialized = true;
+    // Initialize any other data needed for the screen
+    setState(() {
+      _portsSelected = true;
+      _dateSelected = true;
+    });
   }
 
   void _onScroll() {
@@ -172,7 +292,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     setState(() => _isSearching = true);
 
-    try {
+    try {      // Membuat Map passengerCounts yang benar
+      final Map<PassengerType, int> passengerCounts = {
+        PassengerType.adult: _passengerCounts[PassengerType.adult] ?? 0,
+        PassengerType.child: _passengerCounts[PassengerType.child] ?? 0,
+        PassengerType.elderly: _passengerCounts[PassengerType.elderly] ?? 0,
+      };
+
       final ticket = Ticket(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         routeName: "${_fromController.text} - ${_toController.text}",
@@ -182,18 +308,15 @@ class _HomeScreenState extends State<HomeScreen> {
           "${DateFormat('yyyy-MM-dd').format(_selectedDate)} ${_selectedTimeString!}:00",
         ),
         price: _selectedServiceType == 'Regular' ? 150000 : 200000,
-        shipName:
-            _selectedServiceType == 'Regular'
-                ? "KMP Gajah Mada"
-                : "KMP Jatra III",
+        shipName: _selectedServiceType == 'Regular' ? "KMP Gajah Mada" : "KMP Jatra III",
         ticketClass: _selectedServiceType,
         status: "Aktif",
-        passengerCounts: Map.from(_passengerCounts),
+        passengerCounts: passengerCounts,
       );
 
       if (!mounted) return;
 
-      // Tampilkan popup terlebih dahulu
+      // Tampilkan popup konfirmasi tiket
       showDialog(
         context: context,
         builder: (context) => TicketPopup(
@@ -203,16 +326,16 @@ class _HomeScreenState extends State<HomeScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => PaymentDetailScreen(ticket: ticket),
+                builder: (context) => FormDataScreen(ticket: ticket),
               ),
             );
           },
         ),
       );
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Terjadi kesalahan: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Terjadi kesalahan: $e'))
+      );
     } finally {
       if (mounted) {
         setState(() => _isSearching = false);
@@ -220,225 +343,178 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Widget _buildProfileAvatar(ProfileProvider profileProvider) {
-    final profile = profileProvider.userProfile;
-
-    if (profile?.profilePicture != null && profile!.profilePicture.isNotEmpty) {
-      // Jika ada foto profil, tampilkan foto
-      return CircleAvatar(
-        backgroundColor: Colors.white,
-        backgroundImage: NetworkImage(profile.profilePicture),
-      );
-    } else if (profile?.imageBase64 != null &&
-        profile!.imageBase64!.isNotEmpty) {
-      // Jika ada foto dalam format base64, gunakan itu
-      return CircleAvatar(
-        backgroundColor: Colors.white,
-        backgroundImage: MemoryImage(
-          Base64Decoder().convert(profile.imageBase64!),
-        ),
-      );
-    } else if (profile?.name != null && profile!.name.isNotEmpty) {
-      // Jika tidak ada foto tapi ada nama, tampilkan inisial
-      final initials =
-          profile.name
-              .split(' ')
-              .take(2)
-              .map((e) => e[0])
-              .join('')
-              .toUpperCase();
-      return CircleAvatar(
-        backgroundColor: Colors.white,
-        child: Text(
-          initials,
-          style: const TextStyle(color: sapphire, fontWeight: FontWeight.bold),
-        ),
-      );
-    } else {
-      // Default avatar jika tidak ada foto dan nama
-      return const CircleAvatar(
-        backgroundColor: Colors.white,
-        child: Icon(Icons.person, color: sapphire),
+  Widget _buildLocationInfo() {
+    if (_currentPosition != null) {
+      return Text(
+        'Lokasi: ${_isNearMerak ? 'Dekat Merak' : 'Dekat Bakauheni'}',
+        style: TextStyle(fontSize: 12),
       );
     }
+    return const SizedBox.shrink();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
       appBar: AppBar(
-        title: const Row(
+        backgroundColor: sapphire,
+        elevation: 0,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.directions_ferry, size: 24, color: Colors.white),
-            SizedBox(width: 8),
-            Text(
+            const Text(
               'FeryGogo',
               style: TextStyle(
-                fontWeight: FontWeight.bold,
                 color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              _isNearMerak ? 'Pelabuhan Merak' : 'Pelabuhan Bakauheni',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
               ),
             ),
           ],
         ),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(colors: [sapphire, skyBlue]),
-          ),
-        ),
         actions: [
-          Consumer<ProfileProvider>(
-            builder: (context, profileProvider, _) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ProfileScreen(),
-                      ),
-                    );
-                  },
-                  child: _buildProfileAvatar(profileProvider),
-                ),
-              );
-            },
+          IconButton(
+            icon: const Icon(Icons.location_on, color: Colors.white),
+            onPressed: _getCurrentLocation,
+            tooltip: 'Perbarui Lokasi',
           ),
         ],
       ),
-      body: SafeArea(
-        child: Consumer<WeatherProvider>(
-          builder: (context, weatherProvider, _) {
-            return Consumer<ScheduleProvider>(
-              builder: (context, scheduleProvider, _) {
-                return RefreshIndicator(
-                  onRefresh: () async {
-                    _isInitialized = false;
-                    return _loadInitialData();
-                  },
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        WeatherCard(weatherProvider: weatherProvider),
-                        const TripTypeSelector(),
-                        Card(
-                          margin: const EdgeInsets.all(16),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                PortSelector(
-                                  fromController: _fromController,
-                                  toController: _toController,
-                                  onSwapPorts: _swapPorts,
-                                ),
-                                const SizedBox(height: 16),
-                                PassengerSelector(
-                                  passengerCounts: _passengerCounts,
-                                  onCountChanged: (type, count) {
-                                    setState(() {
-                                      _passengerCounts[type] = count;
-                                    });
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                                ServiceSelector(
-                                  serviceTypes: _serviceTypes,
-                                  selectedServiceType: _selectedServiceType,
-                                  onServiceTypeChanged: (value) {
-                                    setState(() {
-                                      _selectedServiceType = value!;
-                                      _updateAvailableTime();
-                                      _updateFormState();
-                                    });
-                                  },
-                                  enabled: _serviceTypeEnabled,
-                                ),
-                                const SizedBox(height: 16),
-                                DateTimeSelector(
-                                  selectedDate: _selectedDate,
-                                  selectedTimeString: _selectedTimeString,
-                                  availableTimes:
-                                      TimeUtils.getAvailableTimesForDate(
-                                        _selectedDate,
-                                        _selectedServiceType,
-                                      ),
-                                  onDateChanged: (date) {
-                                    setState(() {
-                                      _selectedDate = date;
-                                      _updateAvailableTime();
-                                      _updateFormState();
-                                    });
-                                  },
-                                  onTimeChanged: (value) {
-                                    setState(() {
-                                      _selectedTimeString = value;
-                                      _updateFormState();
-                                    });
-                                  },
-                                ),
-                                const SizedBox(height: 24),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed:
-                                        _passengerTypeEnabled &&
-                                                _selectedTimeString != null &&
-                                                !_isSearching &&
-                                                _totalPassengers > 0
-                                            ? _searchSchedules
-                                            : null,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: sapphire,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 16,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      disabledBackgroundColor:
-                                          Colors.grey.shade300,
+      body: !_isInitialized
+          ? const Center(child: CircularProgressIndicator())
+          : SafeArea(
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Consumer<WeatherProvider>(
+                        builder: (context, weatherProvider, child) {
+                          return Column(
+                            children: [
+                              WeatherCard(weatherProvider: weatherProvider),
+                              _buildLocationInfo(), // Menampilkan info lokasi
+                            ],
+                          );
+                        },
+                      ),
+                      const TripTypeSelector(),
+                      Card(
+                        margin: const EdgeInsets.all(16),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              PortSelector(
+                                fromController: _fromController,
+                                toController: _toController,
+                                onSwapPorts: _swapPorts,
+                              ),
+                              const SizedBox(height: 16),
+                              PassengerSelector(
+                                passengerCounts: _passengerCounts,
+                                onCountChanged: (type, count) {
+                                  setState(() {
+                                    _passengerCounts[type] = count;
+                                  });
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              ServiceSelector(
+                                serviceTypes: _serviceTypes,
+                                selectedServiceType: _selectedServiceType,
+                                onServiceTypeChanged: (value) {
+                                  setState(() {
+                                    _selectedServiceType = value!;
+                                    _updateAvailableTime();
+                                    _updateFormState();
+                                  });
+                                },
+                                enabled: _serviceTypeEnabled,
+                              ),
+                              const SizedBox(height: 16),
+                              DateTimeSelector(
+                                selectedDate: _selectedDate,
+                                selectedTimeString: _selectedTimeString,
+                                availableTimes:
+                                    TimeUtils.getAvailableTimesForDate(
+                                      _selectedDate,
+                                      _selectedServiceType,
                                     ),
-                                    child:
-                                        _isSearching
-                                            ? const SizedBox(
-                                              height: 20,
-                                              width: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                valueColor:
-                                                    AlwaysStoppedAnimation<
-                                                      Color
-                                                    >(Colors.white),
-                                              ),
-                                            )
-                                            : const Text(
-                                              'Lanjutkan Pembayaran',
-                                            ),
+                                onDateChanged: (date) {
+                                  setState(() {
+                                    _selectedDate = date;
+                                    _updateAvailableTime();
+                                    _updateFormState();
+                                  });
+                                },
+                                onTimeChanged: (value) {
+                                  setState(() {
+                                    _selectedTimeString = value;
+                                    _updateFormState();
+                                  });
+                                },
+                              ),
+                              const SizedBox(height: 24),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed:
+                                      _passengerTypeEnabled &&
+                                              _selectedTimeString != null &&
+                                              !_isSearching &&
+                                              _totalPassengers > 0
+                                          ? _searchSchedules
+                                          : null,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: sapphire,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    disabledBackgroundColor:
+                                        Colors.grey.shade300,
                                   ),
+                                  child:
+                                      _isSearching
+                                          ? const SizedBox(
+                                            height: 20,
+                                            width: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<
+                                                    Color
+                                                  >(Colors.white),
+                                            ),
+                                          )
+                                          : const Text(
+                                            'Lanjutkan Pembayaran',
+                                          ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                );
-              },
-            );
-          },
-        ),
-      ),
+                ),
+              ),
+            ),
     );
   }
 }

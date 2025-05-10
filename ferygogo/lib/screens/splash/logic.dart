@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../services/error_handler.dart';
 
 class SplashScreenLogic {
   final BuildContext context;
@@ -44,13 +43,6 @@ class SplashScreenLogic {
   }
 
   Future<void> _initializeApp() async {
-    // Set timeout timer
-    timeoutTimer = Timer(const Duration(seconds: 5), () {
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/login');
-      }
-    });
-
     try {
       print('SplashScreen: Starting initialization');
       await controller.forward();
@@ -60,30 +52,20 @@ class SplashScreenLogic {
 
       final auth = Provider.of<AuthProvider>(context, listen: false);
       await auth.checkAuthState();
-      print('SplashScreen: Auth state checked');
-
-      timeoutTimer?.cancel(); // Cancel timeout if successful
-
-      if (!mounted) return;
-
-      if (auth.isAuthenticated) {
-  print('SplashScreen: User authenticated');
-
-  if (mounted) {
-    bool hasPermission = await LocationPermissionHandler.requestLocationPermission(context);
-
-    if (mounted && hasPermission) {
-      Navigator.pushReplacementNamed(context, '/home');
-    } else {
-      // Jika tidak diizinkan, tetap arahkan ke login (opsional)
-      Navigator.pushReplacementNamed(context, '/login');
+      
+      if (mounted) {
+        if (auth.isAuthenticated) {
+          Navigator.pushReplacementNamed(context, '/home');
+        } else {
+          Navigator.pushReplacementNamed(context, '/login');
+        }
+      }
+    } catch (e) {
+      print('SplashScreen: Error during initialization: $e');
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/login');
+      }
     }
-  }
-} else {
-  print('SplashScreen: User not authenticated, navigating to /login');
-  Navigator.pushReplacementNamed(context, '/login');
-}
-
   }
 
   void dispose() {
@@ -91,5 +73,4 @@ class SplashScreenLogic {
     timeoutTimer?.cancel();
     controller.dispose();
   }
-}
 }

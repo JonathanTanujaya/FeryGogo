@@ -2,6 +2,7 @@ import 'package:ferry_ticket_app/models/weather_info.dart';
 import 'package:flutter/material.dart';
 import 'package:ferry_ticket_app/providers/weather_provider.dart';
 import 'package:weather_icons/weather_icons.dart';
+import 'package:intl/intl.dart';
 
 const Color sapphire = Color(0xFF0F52BA);
 
@@ -47,39 +48,34 @@ class WeatherCard extends StatelessWidget {
   }
 
   IconData _mapIconToWeatherIcon(String iconCode) {
-    switch (iconCode) {
-      case '01d':
+    switch (iconCode.toLowerCase()) {
+      case 'clear':
+      case 'sunny':
         return WeatherIcons.day_sunny;
-      case '01n':
+      case 'clear-night':
         return WeatherIcons.night_clear;
-      case '02d':
+      case 'partly-cloudy':
         return WeatherIcons.day_cloudy;
-      case '02n':
+      case 'partly-cloudy-night':
         return WeatherIcons.night_alt_cloudy;
-      case '03d':
-      case '03n':
+      case 'cloudy':
         return WeatherIcons.cloud;
-      case '04d':
-      case '04n':
+      case 'overcast':
         return WeatherIcons.cloudy;
-      case '09d':
-      case '09n':
+      case 'rain':
+        return WeatherIcons.rain;
+      case 'rain-light':
         return WeatherIcons.showers;
-      case '10d':
-        return WeatherIcons.day_rain;
-      case '10n':
-        return WeatherIcons.night_alt_rain;
-      case '11d':
-      case '11n':
+      case 'rain-heavy':
+        return WeatherIcons.rain_wind;
+      case 'thunderstorm':
         return WeatherIcons.thunderstorm;
-      case '13d':
-      case '13n':
-        return WeatherIcons.snow;
-      case '50d':
-      case '50n':
+      case 'fog':
         return WeatherIcons.fog;
+      case 'snow':
+        return WeatherIcons.snow;
       default:
-        return WeatherIcons.na; // Not available
+        return WeatherIcons.na;
     }
   }
 
@@ -95,7 +91,7 @@ class WeatherCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(weatherProvider.error ?? 'Terjadi kesalahan'),
             TextButton(
-              onPressed: () => weatherProvider.fetchWeatherFromApi(),
+              onPressed: () => weatherProvider.loadWeatherInfo(),
               child: const Text('Coba Lagi'),
             ),
           ],
@@ -116,7 +112,7 @@ class WeatherCard extends StatelessWidget {
             const SizedBox(height: 8),
             const Text('Informasi cuaca tidak tersedia'),
             TextButton(
-              onPressed: () => weatherProvider.fetchWeatherFromApi(),
+              onPressed: () => weatherProvider.loadWeatherInfo(),
               child: const Text('Muat Ulang'),
             ),
           ],
@@ -134,8 +130,14 @@ class WeatherCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildWeatherHeader(weatherInfo),
-            const SizedBox(height: 16),
-            const Divider(),
+            if (weatherInfo.hourlyForecast.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 8),
+              _buildHourlyForecast(weatherInfo),
+              const SizedBox(height: 16),
+              const Divider(),
+            ],
             const SizedBox(height: 16),
             _buildWeatherDetails(weatherInfo),
           ],
@@ -154,7 +156,7 @@ class WeatherCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                weatherInfo.cityName,
+                'Pelabuhan ${weatherInfo.cityName}',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -190,24 +192,65 @@ class WeatherCard extends StatelessWidget {
             ],
           ),
         ),
-        if (weatherInfo.icon.isNotEmpty) ...[
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: sapphire.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: BoxedIcon(
-                _mapIconToWeatherIcon(weatherInfo.icon),
-                size: 40,
-                color: Colors.orange[700],
-              ),
+        Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            color: sapphire.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: BoxedIcon(
+              _mapIconToWeatherIcon(weatherInfo.icon),
+              size: 40,
+              color: Colors.orange[700],
             ),
           ),
-        ],
+        ),
       ],
+    );
+  }
+
+  Widget _buildHourlyForecast(WeatherInfo weatherInfo) {
+    return SizedBox(
+      height: 100,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: weatherInfo.hourlyForecast.length,
+        itemBuilder: (context, index) {
+          final forecast = weatherInfo.hourlyForecast[index];
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  DateFormat('HH:mm').format(forecast.time),
+                  style: const TextStyle(fontSize: 12),
+                ),
+                const SizedBox(height: 4),
+                BoxedIcon(
+                  _mapIconToWeatherIcon(forecast.icon),
+                  size: 24,
+                  color: Colors.orange[700],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${forecast.temperature.toStringAsFixed(1)}°',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  '${forecast.windSpeed.toStringAsFixed(1)} m/s',
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 

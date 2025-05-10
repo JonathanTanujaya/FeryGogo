@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../models/ticket.dart';
-import '../models/passenger.dart';
-import 'eticket_screen.dart';
+import '../../models/ticket.dart';
+import '../../models/passenger.dart';
+import '../eticket_screen.dart';
 
 class PaymentDetailScreen extends StatefulWidget {
   final Ticket ticket;

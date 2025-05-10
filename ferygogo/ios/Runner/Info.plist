@@ -43,6 +43,10 @@
 	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>App ini memerlukan akses lokasi untuk menentukan pelabuhan terdekat dan memberikan informasi cuaca yang relevan.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>App ini memerlukan akses lokasi untuk memberikan informasi cuaca dan pelabuhan terdekat secara real-time.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 </dict>
