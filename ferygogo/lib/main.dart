@@ -18,7 +18,7 @@ import 'screens/SignUp/signup_screen.dart';
 import 'screens/Home/home_screen.dart';  // Updated import path
 import 'screens/booking_screen.dart';
 import 'screens/history_screen.dart';
-import 'screens/profile_screen.dart';
+import 'screens/profile/profile_screen.dart';
 import 'utils/auth_guard.dart';
 
 // Konstanta untuk mode debug
