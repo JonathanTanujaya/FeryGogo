@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/ticket.dart';
 import '../../models/passenger.dart';
+import '../../models/vehicle_category.dart';
 
 class TicketPopup extends StatelessWidget {
   final VoidCallback onContinue;
@@ -15,78 +16,90 @@ class TicketPopup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final vehicleInfo = ticket.vehicleCategory != null ? 
+        VehicleInfo.categories[ticket.vehicleCategory] : null;
+    
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text("Informasi Tiket",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            const SizedBox(height: 16),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _ticketRow("Pelabuhan Keberangkatan", ticket.departurePort),
-                const SizedBox(height: 12),
-                _ticketRow("Pelabuhan Tujuan", ticket.arrivalPort),
-                const SizedBox(height: 12),
-                _ticketRow(
-                  "Jadwal Masuk Pelabuhan",
-                  DateFormat('dd MMM yyyy, HH:mm').format(ticket.departureTime),
-                ),
-                const SizedBox(height: 12),
-                _ticketRow("Layanan", ticket.ticketClass),
-                const SizedBox(height: 12),
-                _ticketRow(
-                  "Harga Tiket",
-                  NumberFormat.currency(
-                    locale: 'id',
-                    symbol: 'Rp ',
-                    decimalDigits: 0,
-                  ).format(ticket.price),
-                ),
-                const SizedBox(height: 8),
-                if ((ticket.passengerCounts[PassengerType.adult] ?? 0) > 0)
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Informasi Tiket",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)
+              ),
+              const SizedBox(height: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _ticketRow("Pelabuhan Keberangkatan", ticket.departurePort),
+                  const SizedBox(height: 12),
+                  _ticketRow("Pelabuhan Tujuan", ticket.arrivalPort),
+                  const SizedBox(height: 12),
                   _ticketRow(
-                    "Dewasa x${ticket.passengerCounts[PassengerType.adult]}",
-                    "Termasuk",
+                    "Jadwal Masuk Pelabuhan",
+                    DateFormat('dd MMM yyyy, HH:mm').format(ticket.departureTime),
                   ),
-                if ((ticket.passengerCounts[PassengerType.child] ?? 0) > 0)
+                  const SizedBox(height: 12),
+                  _ticketRow("Layanan", ticket.ticketClass),
+                  if (vehicleInfo != null) ...[
+                    const SizedBox(height: 12),
+                    _ticketRow("Jenis Kendaraan", "${vehicleInfo.name} - ${vehicleInfo.description}"),
+                  ],
+                  const SizedBox(height: 12),
                   _ticketRow(
-                    "Anak x${ticket.passengerCounts[PassengerType.child]}",
-                    "Termasuk",
+                    "Harga Tiket",
+                    NumberFormat.currency(
+                      locale: 'id',
+                      symbol: 'Rp ',
+                      decimalDigits: 0,
+                    ).format(ticket.price),
                   ),
-                if ((ticket.passengerCounts[PassengerType.elderly] ?? 0) > 0)
-                  _ticketRow(
-                    "Lansia x${ticket.passengerCounts[PassengerType.elderly]}",
-                    "Termasuk",
-                  ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text("KEMBALI"),
-                  ),
-                ),
-                const SizedBox(width: 8),                Expanded(
-                  child: ElevatedButton(
-                    onPressed: onContinue,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0F52BA),
-                      foregroundColor: Colors.white,
+                  const SizedBox(height: 8),
+                  if ((ticket.passengerCounts[PassengerType.adult] ?? 0) > 0)
+                    _ticketRow(
+                      "Dewasa x${ticket.passengerCounts[PassengerType.adult]}",
+                      "Termasuk",
                     ),
-                    child: const Text("LANJUTKAN"),
+                  if ((ticket.passengerCounts[PassengerType.child] ?? 0) > 0)
+                    _ticketRow(
+                      "Anak x${ticket.passengerCounts[PassengerType.child]}",
+                      "Termasuk",
+                    ),
+                  if ((ticket.passengerCounts[PassengerType.elderly] ?? 0) > 0)
+                    _ticketRow(
+                      "Lansia x${ticket.passengerCounts[PassengerType.elderly]}",
+                      "Termasuk",
+                    ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text("KEMBALI"),
+                    ),
                   ),
-                ),
-              ],
-            )
-          ],
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: onContinue,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0F52BA),
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text("LANJUTKAN"),
+                    ),
+                  ),
+                ],
+              )
+            ],
+          ),
         ),
       ),
     );

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../models/ticket.dart';
 import '../../models/passenger.dart';
+import '../../models/vehicle_category.dart';
 import 'payment_detail_screen.dart';
 
 class FormDataScreen extends StatefulWidget {
@@ -18,6 +20,8 @@ class _FormDataScreenState extends State<FormDataScreen> {
   final bookerNameController = TextEditingController();
   final bookerPhoneController = TextEditingController();
   final bookerEmailController = TextEditingController();
+  final plateNumberController = TextEditingController();
+  VehicleCategory selectedVehicle = VehicleCategory.none;
 
   @override
   void initState() {
@@ -30,6 +34,7 @@ class _FormDataScreenState extends State<FormDataScreen> {
     bookerNameController.dispose();
     bookerPhoneController.dispose();
     bookerEmailController.dispose();
+    plateNumberController.dispose();
     for (var passenger in _passengers) {
       passenger.dispose();
     }
@@ -66,6 +71,8 @@ class _FormDataScreenState extends State<FormDataScreen> {
           padding: const EdgeInsets.all(16),
           children: [
             _buildBookerInfoForm(),
+            const SizedBox(height: 24),
+            _buildVehicleSelectionForm(),
             const SizedBox(height: 24),
             const Text(
               'Data Penumpang',
@@ -168,6 +175,62 @@ class _FormDataScreenState extends State<FormDataScreen> {
                 return null;
               },
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVehicleSelectionForm() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Informasi Kendaraan',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<VehicleCategory>(
+              decoration: const InputDecoration(
+                labelText: 'Jenis Kendaraan',
+                border: OutlineInputBorder(),
+              ),
+              value: selectedVehicle,
+              items: VehicleInfo.categories.entries.map((entry) {
+                final info = entry.value;
+                return DropdownMenuItem(
+                  value: entry.key,
+                  child: Text('${info.name} - ${info.description}\n${info.example}'),
+                );
+              }).toList(),
+              onChanged: (VehicleCategory? value) {
+                setState(() {
+                  selectedVehicle = value ?? VehicleCategory.none;
+                });
+              },
+            ),
+            if (selectedVehicle != VehicleCategory.none) ...[
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: plateNumberController,
+                decoration: const InputDecoration(
+                  labelText: 'Nomor Plat Kendaraan',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (selectedVehicle != VehicleCategory.none && (value == null || value.isEmpty)) {
+                    return 'Nomor plat kendaraan harus diisi';
+                  }
+                  return null;
+                },
+              ),
+            ],
           ],
         ),
       ),
@@ -315,13 +378,21 @@ class _FormDataScreenState extends State<FormDataScreen> {
           actualCounts[passenger.type] = (actualCounts[passenger.type] ?? 0) + 1;
         }
 
+        // Calculate total price based on passenger count and vehicle category
+        final basePrice = selectedVehicle != VehicleCategory.none
+            ? VehicleInfo.categories[selectedVehicle]!.basePrice
+            : VehicleInfo.categories[VehicleCategory.none]!.basePrice;
+
+        final totalPassengers = passengers.length;
+        final totalPrice = basePrice * totalPassengers;
+
         final updatedTicket = Ticket(
           id: widget.ticket.id,
           routeName: widget.ticket.routeName,
           departurePort: widget.ticket.departurePort,
           arrivalPort: widget.ticket.arrivalPort,
           departureTime: widget.ticket.departureTime,
-          price: widget.ticket.price,
+          price: totalPrice,
           shipName: widget.ticket.shipName,
           ticketClass: widget.ticket.ticketClass,
           status: widget.ticket.status,
@@ -330,6 +401,8 @@ class _FormDataScreenState extends State<FormDataScreen> {
           bookerName: bookerNameController.text,
           bookerPhone: bookerPhoneController.text,
           bookerEmail: bookerEmailController.text,
+          vehicleCategory: selectedVehicle,
+          vehiclePlateNumber: selectedVehicle != VehicleCategory.none ? plateNumberController.text : null,
         );
 
         // Navigasi ke halaman pembayaran

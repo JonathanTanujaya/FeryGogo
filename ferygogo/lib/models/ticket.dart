@@ -1,4 +1,5 @@
 import 'passenger.dart';
+import 'vehicle_category.dart';
 
 class Ticket {
   final String id;
@@ -15,6 +16,8 @@ class Ticket {
   final String bookerName;
   final String bookerPhone;
   final String bookerEmail;
+  final VehicleCategory? vehicleCategory;
+  final String? vehiclePlateNumber;
 
   Ticket({
     required this.id,
@@ -31,6 +34,8 @@ class Ticket {
     this.bookerName = '',
     this.bookerPhone = '',
     this.bookerEmail = '',
+    this.vehicleCategory,
+    this.vehiclePlateNumber,
   });
 
   Map<String, dynamic> toJson() => {
@@ -48,6 +53,8 @@ class Ticket {
     'bookerName': bookerName,
     'bookerPhone': bookerPhone,
     'bookerEmail': bookerEmail,
+    'vehicleCategory': vehicleCategory?.toString(),
+    'vehiclePlateNumber': vehiclePlateNumber,
   };
 
   // Dummy data generator

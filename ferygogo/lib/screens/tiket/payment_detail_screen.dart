@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/ticket.dart';
 import '../../models/passenger.dart';
+import '../../models/vehicle_category.dart';
 import 'eticket_screen.dart';
 
 class PaymentDetailScreen extends StatefulWidget {
@@ -29,6 +30,9 @@ class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
           children: [
             _buildTicketSummary(),
             _buildPassengerInfo(),
+            if (widget.ticket.vehicleCategory != null && 
+                widget.ticket.vehicleCategory != VehicleCategory.none)
+              _buildVehicleInfo(),
             _buildPaymentSummary(),
             _buildBookerInfo(),
           ],
@@ -192,6 +196,40 @@ class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
     );
   }
 
+  Widget _buildVehicleInfo() {
+    final vehicleInfo = VehicleInfo.categories[widget.ticket.vehicleCategory]!;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Informasi Kendaraan',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  _buildInfoRow('Kategori', vehicleInfo.name),
+                  _buildInfoRow('Keterangan', vehicleInfo.description),
+                  _buildInfoRow('Contoh', vehicleInfo.example),
+                  if (widget.ticket.vehiclePlateNumber != null)
+                    _buildInfoRow('Nomor Plat', widget.ticket.vehiclePlateNumber!),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBookerInfo() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -226,7 +264,10 @@ class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
   Widget _buildPaymentSummary() {
     final passengerCount = widget.ticket.passengers.length;
     final serviceFee = 2500.0 * passengerCount;
-    final totalAmount = (widget.ticket.price * passengerCount) + serviceFee;
+    final basePrice = widget.ticket.vehicleCategory != null
+        ? VehicleInfo.categories[widget.ticket.vehicleCategory]!.basePrice
+        : VehicleInfo.categories[VehicleCategory.none]!.basePrice;
+    final totalAmount = (basePrice * passengerCount) + serviceFee;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -255,7 +296,7 @@ class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
                           locale: 'id',
                           symbol: 'Rp ',
                           decimalDigits: 0,
-                        ).format(widget.ticket.price * passengerCount),
+                        ).format(basePrice * passengerCount),
                       ),
                     ],
                   ),

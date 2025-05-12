@@ -4,7 +4,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'dart:convert';
 import '../../models/ticket.dart';
 import '../../models/passenger.dart';
-import '../Home/home_screen.dart';
+import '../../models/vehicle_category.dart';
 
 class ETicketScreen extends StatelessWidget {
   final Ticket ticket;
@@ -40,6 +40,9 @@ class ETicketScreen extends StatelessWidget {
               _buildTicketHeader(),
               _buildQRCode(),
               _buildTicketDetails(),
+              if (ticket.vehicleCategory != null && 
+                  ticket.vehicleCategory != VehicleCategory.none)
+                _buildVehicleInfo(),
               _buildPassengerList(),
               _buildBookerInfo(),
             ],
@@ -159,6 +162,44 @@ class ETicketScreen extends StatelessWidget {
               symbol: 'Rp ',
               decimalDigits: 0,
             ).format(ticket.price * ticket.passengers.length),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVehicleInfo() {
+    if (ticket.vehicleCategory == null || ticket.vehicleCategory == VehicleCategory.none) {
+      return const SizedBox.shrink();
+    }
+
+    final vehicleInfo = VehicleInfo.categories[ticket.vehicleCategory]!;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Informasi Kendaraan',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  _buildDetailRow('Kategori', vehicleInfo.name),
+                  _buildDetailRow('Keterangan', vehicleInfo.description),
+                  _buildDetailRow('Contoh', vehicleInfo.example),
+                  if (ticket.vehiclePlateNumber != null)
+                    _buildDetailRow('Nomor Plat', ticket.vehiclePlateNumber!),
+                ],
+              ),
+            ),
           ),
         ],
       ),
