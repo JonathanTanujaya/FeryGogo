@@ -15,6 +15,7 @@ class BookingScreen extends StatefulWidget {
 class _BookingScreenState extends State<BookingScreen> {
   final ScrollController _scrollController = ScrollController();
   Timer? _debounce;
+  Timer? _statusCheckTimer;
   final TextEditingController _searchController = TextEditingController();
   
   @override
@@ -23,12 +24,21 @@ class _BookingScreenState extends State<BookingScreen> {
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<BookingProvider>().loadBookings();
+      _startStatusCheck();
+    });
+  }
+
+  void _startStatusCheck() {
+    // Check status tiket setiap 5 menit
+    _statusCheckTimer = Timer.periodic(const Duration(minutes: 5), (_) {
+      context.read<BookingProvider>().checkAndUpdateBookingStatus();
     });
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
+    _statusCheckTimer?.cancel();
     _scrollController.dispose();
     _searchController.dispose();
     super.dispose();

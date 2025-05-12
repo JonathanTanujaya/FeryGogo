@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:intl/intl.dart';
 import '../models/booking.dart';
 import '../services/error_handler.dart';
 
@@ -113,6 +114,44 @@ class BookingProvider with ChangeNotifier {
     }
   }
 
+  Future<void> completeBooking(String bookingId) async {
+    if (_auth.currentUser == null) return;
+
+    try {
+      _setLoading(true);
+      _setError(null);
+
+      await _database
+          .child('bookings')
+          .child(_auth.currentUser!.uid)
+          .child(bookingId)
+          .update({'status': 'Selesai'});
+
+      // Update local booking status
+      final index = _bookings.indexWhere((b) => b.id == bookingId);
+      if (index != -1) {
+        final booking = _bookings[index];
+        _bookings[index] = Booking(
+          id: booking.id,
+          userId: booking.userId,
+          routeName: booking.routeName,
+          date: booking.date,
+          status: 'Selesai',
+          quantity: booking.quantity,
+          totalPrice: booking.totalPrice,
+          departureTime: booking.departureTime,
+          arrivalTime: booking.arrivalTime,
+          routeType: booking.routeType,
+        );
+        notifyListeners();
+      }
+    } catch (e) {
+      _setError(ErrorHandler.getDatabaseErrorMessage(e));
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   Future<void> loadBookings() async {
     if (_auth.currentUser == null) return;
 
@@ -146,6 +185,37 @@ class BookingProvider with ChangeNotifier {
       _setError(ErrorHandler.getDatabaseErrorMessage(e));
     } finally {
       _setLoading(false);
+    }
+  }
+
+  Future<void> checkAndUpdateBookingStatus() async {
+    if (_auth.currentUser == null) return;
+
+    try {
+      final snapshot = await _database
+          .child('bookings')
+          .child(_auth.currentUser!.uid)
+          .orderByChild('status')
+          .equalTo('Pending')
+          .get();
+
+      if (!snapshot.exists) return;
+
+      final now = DateTime.now();
+      final data = snapshot.value as Map<dynamic, dynamic>;
+      
+      for (var entry in data.entries) {
+        final booking = Booking.fromMap(entry.key as String, entry.value as Map<dynamic, dynamic>);
+        final departureTime = DateFormat('dd MMM yyyy, HH:mm')
+            .parse('${booking.date}, ${booking.departureTime}');
+        
+        // Jika sudah 2 jam setelah keberangkatan, tandai selesai
+        if (now.isAfter(departureTime.add(const Duration(hours: 2)))) {
+          await completeBooking(booking.id);
+        }
+      }
+    } catch (e) {
+      _setError(ErrorHandler.getDatabaseErrorMessage(e));
     }
   }
 

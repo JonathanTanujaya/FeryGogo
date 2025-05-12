@@ -30,7 +30,8 @@ class HistoryProvider with ChangeNotifier {
       final query = _database
           .child('bookings')
           .child(_auth.currentUser!.uid)
-          .orderByKey()
+          .orderByChild('status')
+          .equalTo('Selesai')  // Hanya ambil tiket yang sudah selesai
           .limitToLast(_pageSize);
 
       final snapshot = await query.get();
@@ -66,7 +67,8 @@ class HistoryProvider with ChangeNotifier {
       final query = _database
           .child('bookings')
           .child(_auth.currentUser!.uid)
-          .orderByKey()
+          .orderByChild('status')
+          .equalTo('Selesai')  // Hanya ambil tiket yang sudah selesai
           .endBefore(_lastKey)
           .limitToLast(_pageSize);
 
