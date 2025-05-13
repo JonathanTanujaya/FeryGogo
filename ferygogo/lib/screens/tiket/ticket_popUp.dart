@@ -43,12 +43,9 @@ class TicketPopup extends StatelessWidget {
                     "Jadwal Masuk Pelabuhan",
                     DateFormat('dd MMM yyyy, HH:mm').format(ticket.departureTime),
                   ),
+                  const SizedBox(height: 12),                  _ticketRow("Layanan", ticket.ticketClass),
                   const SizedBox(height: 12),
-                  _ticketRow("Layanan", ticket.ticketClass),
-                  if (vehicleInfo != null) ...[
-                    const SizedBox(height: 12),
-                    _ticketRow("Jenis Kendaraan", "${vehicleInfo.name} - ${vehicleInfo.description}"),
-                  ],
+                  _ticketRow("Jenis Tiket", vehicleInfo?.name ?? 'Tidak diketahui'),
                   const SizedBox(height: 12),
                   _ticketRow(
                     "Harga Tiket",

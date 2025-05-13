@@ -10,15 +10,13 @@ class Ticket {
   final double price;
   final String shipName;
   final String ticketClass;
-  final String status;
-  final Map<PassengerType, int> passengerCounts;
+  final String status;  final Map<PassengerType, int> passengerCounts;
   final List<Passenger> passengers;
   final String bookerName;
   final String bookerPhone;
   final String bookerEmail;
   final VehicleCategory? vehicleCategory;
   final String? vehiclePlateNumber;
-
   Ticket({
     required this.id,
     required this.routeName,
@@ -33,8 +31,7 @@ class Ticket {
     this.passengers = const [],
     this.bookerName = '',
     this.bookerPhone = '',
-    this.bookerEmail = '',
-    this.vehicleCategory,
+    this.bookerEmail = '',    this.vehicleCategory,
     this.vehiclePlateNumber,
   });
 

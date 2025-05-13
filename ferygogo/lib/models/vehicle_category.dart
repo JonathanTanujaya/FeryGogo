@@ -27,43 +27,95 @@ class VehicleInfo {
     required this.description,
     required this.example,
     required this.basePrice,
-  });
-
-  static Map<VehicleCategory, VehicleInfo> get categories => {
+  });  static Map<VehicleCategory, VehicleInfo> get categories => {
     VehicleCategory.none: VehicleInfo(
       category: VehicleCategory.none,
-      name: 'Pejalan Kaki',
-      description: 'Penumpang tanpa kendaraan',
-      example: '-',
-      basePrice: 25000, // Rp 20.000 - Rp 30.000
+      name: 'Gol 1',
+      description: 'Pejalan Kaki',
+      example: 'Penumpang tanpa kendaraan',
+      basePrice: 25000,
     ),
     VehicleCategory.golongan1: VehicleInfo(
       category: VehicleCategory.golongan1,
-      name: 'Golongan I',
-      description: 'Sepeda kayuh',
+      name: 'Gol 2',
+      description: 'Sepeda',
       example: 'Gowes/bike',
-      basePrice: 50000, // Rp 40.000 - Rp 60.000
-    ),
-    VehicleCategory.golongan2: VehicleInfo(
+      basePrice: 50000,
+    ),    VehicleCategory.golongan2: VehicleInfo(
       category: VehicleCategory.golongan2,
-      name: 'Golongan II',
+      name: 'Gol 3',
       description: 'Sepeda motor < 500cc',
       example: 'Motor bebek/matic kecil',
-      basePrice: 80000, // Rp 70.000 - Rp 90.000
+      basePrice: 80000,
+    ),    VehicleCategory.golongan3: VehicleInfo(
+      category: VehicleCategory.golongan3,
+      name: 'Gol 3',
+      description: 'Sepeda motor ≥ 500cc',
+      example: 'Motor sport besar',
+      basePrice: 100000,
     ),
     VehicleCategory.golongan4A: VehicleInfo(
       category: VehicleCategory.golongan4A,
-      name: 'Golongan IV A',
+      name: 'Gol 4A',
       description: 'Mobil penumpang kecil',
       example: 'Sedan, Avanza, Mobilio',
-      basePrice: 575000, // Rp 500.000 - Rp 650.000
+      basePrice: 575000,
+    ),
+    VehicleCategory.golongan4B: VehicleInfo(
+      category: VehicleCategory.golongan4B,
+      name: 'Gol 4B',
+      description: 'Mobil barang kecil',
+      example: 'Pickup',
+      basePrice: 600000,
+    ),
+    VehicleCategory.golongan5A: VehicleInfo(
+      category: VehicleCategory.golongan5A,
+      name: 'Gol 5A',
+      description: 'Bus kecil',
+      example: 'ELF, APV',
+      basePrice: 850000,
     ),
     VehicleCategory.golongan5B: VehicleInfo(
       category: VehicleCategory.golongan5B,
-      name: 'Golongan V B',
+      name: 'Gol 5B',
       description: 'Truk kecil',
       example: 'Truk Colt Diesel (engkel)',
-      basePrice: 950000, // Rp 800.000 - Rp 1.100.000
+      basePrice: 950000,
+    ),
+    VehicleCategory.golongan6A: VehicleInfo(
+      category: VehicleCategory.golongan6A,
+      name: 'Gol 6A',
+      description: 'Bus sedang',
+      example: 'Bus medium',
+      basePrice: 1200000,
+    ),
+    VehicleCategory.golongan6B: VehicleInfo(
+      category: VehicleCategory.golongan6B,
+      name: 'Gol 6B',
+      description: 'Truk sedang',
+      example: 'Truk dua gandar',
+      basePrice: 1300000,
+    ),
+    VehicleCategory.golongan7: VehicleInfo(
+      category: VehicleCategory.golongan7,
+      name: 'Gol 7',
+      description: 'Bus besar',
+      example: 'Bus tingkat',
+      basePrice: 1500000,
+    ),
+    VehicleCategory.golongan8: VehicleInfo(
+      category: VehicleCategory.golongan8,
+      name: 'Gol 8',
+      description: 'Truk besar',
+      example: 'Truk tiga sumbu',
+      basePrice: 1800000,
+    ),
+    VehicleCategory.golongan9: VehicleInfo(
+      category: VehicleCategory.golongan9,
+      name: 'Gol 9',
+      description: 'Truk trailer',
+      example: 'Trailer gandeng',
+      basePrice: 2500000,
     ),
   };
 }

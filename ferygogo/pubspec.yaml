@@ -39,16 +39,16 @@ dev_dependencies:
 flutter_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/fery.png"
+  image_path: "assets/fery.jpg"
   min_sdk_android: 21
   
-flutter:
+flutter:  
   uses-material-design: true
   assets:
     - assets/boat.png
     - assets/waves.png
     - assets/ferygogo.png
-    - assets/fery.png
+    - assets/fery.jpg
     - assets/icons/
   
   fonts:

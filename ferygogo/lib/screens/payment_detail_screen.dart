@@ -1,10 +1,10 @@
+import 'package:ferry_ticket_app/screens/tiket/eticket_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
-import '../models/passenger.dart';
-import '../models/ticket.dart';
-import '../providers/booking_provider.dart';
-import 'tiket/eticket_screen.dart';
+import '../../models/ticket.dart';
+import '../../models/passenger.dart';
+import '../../models/vehicle_category.dart';
+
 
 class PaymentDetailScreen extends StatefulWidget {
   final Ticket ticket;
@@ -16,24 +16,7 @@ class PaymentDetailScreen extends StatefulWidget {
 }
 
 class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final List<PassengerForm> _passengerForms = [];
   bool _isProcessing = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeForms();
-  }
-
-  void _initializeForms() {
-    widget.ticket.passengerCounts.forEach((key, count) {
-      final type = PassengerType.values.firstWhere((t) => t.toString() == 'PassengerType.$key');
-      for (int i = 0; i < count; i++) {
-        _passengerForms.add(PassengerForm(type: type));
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,91 +27,412 @@ class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              _buildTicketSummary(),
-              _buildPassengerForms(),
-              _buildPaymentSummary(),
-            ],
-          ),
+        child: Column(
+          children: [
+            _buildTicketSummary(),
+            _buildPassengerInfo(),
+            if (widget.ticket.vehicleCategory != null && 
+                widget.ticket.vehicleCategory != VehicleCategory.none)
+              _buildVehicleInfo(),
+            _buildPaymentSummary(),
+            _buildBookerInfo(),
+          ],
         ),
       ),
       bottomNavigationBar: _buildBottomBar(),
     );
   }
 
-  Future<void> _processPayment() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      setState(() => _isProcessing = true);
-
-      try {
-        // Simulate payment processing
-        await Future.delayed(const Duration(seconds: 2));
-
-        if (!mounted) return;
-        
-        // Create new booking
-        final bookingProvider = context.read<BookingProvider>();
-        final success = await bookingProvider.createBooking(
-          routeName: widget.ticket.routeName,
-          date: DateFormat('dd MMM yyyy').format(widget.ticket.departureTime),
-          quantity: widget.ticket.passengerCounts.values.fold(0, (sum, count) => sum + count),
-          totalPrice: widget.ticket.price * widget.ticket.passengerCounts.values.fold(0, (sum, count) => sum + count),
-          departureTime: DateFormat('HH:mm').format(widget.ticket.departureTime),
-          arrivalTime: DateFormat('HH:mm').format(widget.ticket.departureTime.add(const Duration(hours: 2))),
-          routeType: widget.ticket.ticketClass.toLowerCase(),
-        );
-
-        if (success) {
-          // Mark booking as complete immediately since payment was successful
-          final bookingId = bookingProvider.bookings.first.id; // Get the ID of the booking we just created
-          await bookingProvider.completeBooking(bookingId);
-
-          // Create passenger list from forms
-          final passengers = _passengerForms.map((form) => Passenger(
-            name: form.nameController.text,
-            idNumber: form.idNumberController.text,
-            phoneNumber: form.phoneController.text,
-            email: form.emailController.text,
-            type: form.type,
-            birthDate: form.birthDate,
-          )).toList();
-
-          final updatedTicket = Ticket(
-            id: widget.ticket.id,
-            routeName: widget.ticket.routeName,
-            departurePort: widget.ticket.departurePort,
-            arrivalPort: widget.ticket.arrivalPort,
-            departureTime: widget.ticket.departureTime,
-            price: widget.ticket.price,
-            shipName: widget.ticket.shipName,
-            ticketClass: widget.ticket.ticketClass,
-            status: "Selesai",
-            passengerCounts: widget.ticket.passengerCounts,
-            passengers: passengers,
-          );
-
-          // Navigate to e-ticket screen
-          if (!mounted) return;
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ETicketScreen(ticket: updatedTicket),
-            ),
-          );
-        }
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
+  Widget _buildTicketSummary() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: const Color(0xFF0F52BA),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.directions_boat, color: Colors.white, size: 24),
+              const SizedBox(width: 8),
+              Text(
+                widget.ticket.routeName,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
-        );
-        setState(() => _isProcessing = false);
-      }
+          const SizedBox(height: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Waktu Keberangkatan',
+                style: TextStyle(color: Colors.white70),
+              ),
+              Text(
+                DateFormat('dd MMM yyyy, HH:mm').format(widget.ticket.departureTime),
+                style: const TextStyle(color: Colors.white),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPassengerInfo() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Data Penumpang',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                '${widget.ticket.passengers.length} Penumpang',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: widget.ticket.passengers.length,
+            itemBuilder: (context, index) {
+              final passenger = widget.ticket.passengers[index];
+              final isChild = passenger.type == PassengerType.child;
+              
+              return Card(
+                elevation: 2,
+                margin: const EdgeInsets.only(bottom: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: const Color(0xFF0F52BA).withOpacity(0.1),
+                                child: Text(
+                                  passenger.name.substring(0, 1).toUpperCase(),
+                                  style: const TextStyle(
+                                    color: Color(0xFF0F52BA),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    passenger.name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  Text(
+                                    _getPassengerTypeLabel(passenger.type),
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0F52BA).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              'Penumpang ${index + 1}',
+                              style: const TextStyle(
+                                color: Color(0xFF0F52BA),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 24),
+                      _buildInfoRow(
+                        isChild ? 'Tanggal Lahir' : 'Nomor KTP',
+                        isChild && passenger.birthDate != null
+                            ? DateFormat('dd MMM yyyy').format(passenger.birthDate!)
+                            : passenger.idNumber,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVehicleInfo() {
+    final vehicleInfo = VehicleInfo.categories[widget.ticket.vehicleCategory]!;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Informasi Kendaraan',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  _buildInfoRow('Kategori', vehicleInfo.name),
+                  _buildInfoRow('Keterangan', vehicleInfo.description),
+                  _buildInfoRow('Contoh', vehicleInfo.example),
+                  if (widget.ticket.vehiclePlateNumber != null)
+                    _buildInfoRow('Nomor Plat', widget.ticket.vehiclePlateNumber!),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBookerInfo() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Informasi Pemesan',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  _buildInfoRow('Nama', widget.ticket.bookerName),
+                  _buildInfoRow('Telepon', widget.ticket.bookerPhone),
+                  _buildInfoRow('Email', widget.ticket.bookerEmail),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentSummary() {
+    final passengerCount = widget.ticket.passengers.length;
+    final serviceFee = 2500.0 * passengerCount;
+    final basePrice = widget.ticket.vehicleCategory != null
+        ? VehicleInfo.categories[widget.ticket.vehicleCategory]!.basePrice
+        : VehicleInfo.categories[VehicleCategory.none]!.basePrice;
+    final totalAmount = (basePrice * passengerCount) + serviceFee;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Ringkasan Pembayaran',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Harga Tiket ($passengerCount penumpang)'),
+                      Text(
+                        NumberFormat.currency(
+                          locale: 'id',
+                          symbol: 'Rp ',
+                          decimalDigits: 0,
+                        ).format(basePrice * passengerCount),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Biaya Layanan ($passengerCount x Rp 2.500)'),
+                      Text(
+                        NumberFormat.currency(
+                          locale: 'id',
+                          symbol: 'Rp ',
+                          decimalDigits: 0,
+                        ).format(serviceFee),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Total',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        NumberFormat.currency(
+                          locale: 'id',
+                          symbol: 'Rp ',
+                          decimalDigits: 0,
+                        ).format(totalAmount),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+          ),
+          const Text(': '),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomBar() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.3),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, -3),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: _isProcessing ? null : _processPayment,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF0F52BA),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        child: _isProcessing
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Text('Bayar Sekarang'),
+      ),
+    );
+  }
+
+  String _getPassengerTypeLabel(PassengerType type) {
+    return switch (type) {
+      PassengerType.child => 'Anak',
+      PassengerType.adult => 'Dewasa',
+      PassengerType.elderly => 'Lansia',
+    };
+  }
+
+  Future<void> _processPayment() async {
+    setState(() => _isProcessing = true);
+
+    try {
+      // Simulate payment processing
+      await Future.delayed(const Duration(seconds: 2));
+
+      if (!mounted) return;
+
+      // Navigate to e-ticket screen
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ETicketScreen(ticket: widget.ticket),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      setState(() => _isProcessing = false);
     }
   }
 }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../models/ticket.dart';
 import '../../models/passenger.dart';
 import '../../models/vehicle_category.dart';
+import '../../providers/profile_provider.dart';
 import 'payment_detail_screen.dart';
 
 class FormDataScreen extends StatefulWidget {
@@ -14,26 +16,21 @@ class FormDataScreen extends StatefulWidget {
   State<FormDataScreen> createState() => _FormDataScreenState();
 }
 
-class _FormDataScreenState extends State<FormDataScreen> {
-  final _formKey = GlobalKey<FormState>();
+class _FormDataScreenState extends State<FormDataScreen> {  final _formKey = GlobalKey<FormState>();
   final List<PassengerFormData> _passengers = [];
-  final bookerNameController = TextEditingController();
-  final bookerPhoneController = TextEditingController();
-  final bookerEmailController = TextEditingController();
   final plateNumberController = TextEditingController();
   VehicleCategory selectedVehicle = VehicleCategory.none;
+  bool _useProfileDataForFirstPassenger = false;
+  
 
   @override
   void initState() {
     super.initState();
     _initializePassengerForms();
+    _initializeBookerInfo();
   }
-
   @override
   void dispose() {
-    bookerNameController.dispose();
-    bookerPhoneController.dispose();
-    bookerEmailController.dispose();
     plateNumberController.dispose();
     for (var passenger in _passengers) {
       passenger.dispose();
@@ -57,6 +54,33 @@ class _FormDataScreenState extends State<FormDataScreen> {
     }
   }
 
+  void _initializeBookerInfo() {
+    final profile = context.read<ProfileProvider>().userProfile;
+    if (profile != null) {
+      setState(() {
+        if (_passengers.isNotEmpty && _passengers[0].type == PassengerType.adult) {
+          _useProfileDataForFirstPassenger = false;
+        }
+      });
+    }
+  }
+
+  void _updateFirstPassengerFromProfile(bool useProfile) {
+    final profile = context.read<ProfileProvider>().userProfile;
+    if (profile != null && _passengers.isNotEmpty && _passengers[0].type == PassengerType.adult) {
+      setState(() {
+        if (useProfile) {
+          _passengers[0].nameController.text = profile.name;
+          _passengers[0].idNumberController.text = profile.identityNumber;
+        } else {
+          _passengers[0].nameController.text = '';
+          _passengers[0].idNumberController.text = '';
+        }
+        _useProfileDataForFirstPassenger = useProfile;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -64,18 +88,13 @@ class _FormDataScreenState extends State<FormDataScreen> {
         title: const Text('Data Penumpang'),
         backgroundColor: const Color(0xFF0F52BA),
         foregroundColor: Colors.white,
-      ),
+      ),      
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            _buildBookerInfoForm(),
-            const SizedBox(height: 24),
-            _buildVehicleSelectionForm(),
-            const SizedBox(height: 24),
-            const Text(
-              'Data Penumpang',
+            const Text('Data Penumpang',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -85,6 +104,10 @@ class _FormDataScreenState extends State<FormDataScreen> {
             ..._passengers.asMap().entries.map((entry) {
               return _buildPassengerForm(entry.key);
             }),
+            if (widget.ticket.vehicleCategory != VehicleCategory.none) ...[
+              const SizedBox(height: 24),
+              _buildVehicleInfoSection(),
+            ],
             const SizedBox(height: 16),
           ],
         ),
@@ -113,76 +136,9 @@ class _FormDataScreenState extends State<FormDataScreen> {
     );
   }
 
-  Widget _buildBookerInfoForm() {
+  Widget _buildVehicleInfoSection() {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Informasi Pemesan',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: bookerNameController,
-              decoration: const InputDecoration(
-                labelText: 'Nama Pemesan',
-                border: OutlineInputBorder(),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Nama pemesan tidak boleh kosong';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: bookerPhoneController,
-              decoration: const InputDecoration(
-                labelText: 'Nomor Telepon',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.phone,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Nomor telepon tidak boleh kosong';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: bookerEmailController,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.emailAddress,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Email tidak boleh kosong';
-                }
-                if (!value.contains('@')) {
-                  return 'Email tidak valid';
-                }
-                return null;
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildVehicleSelectionForm() {
-    return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -196,41 +152,21 @@ class _FormDataScreenState extends State<FormDataScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<VehicleCategory>(
+            TextFormField(
+              controller: plateNumberController,
               decoration: const InputDecoration(
-                labelText: 'Jenis Kendaraan',
+                labelText: 'Plat Nomor Kendaraan',
+                hintText: 'Contoh: B 1234 XYZ',
                 border: OutlineInputBorder(),
               ),
-              value: selectedVehicle,
-              items: VehicleInfo.categories.entries.map((entry) {
-                final info = entry.value;
-                return DropdownMenuItem(
-                  value: entry.key,
-                  child: Text('${info.name} - ${info.description}\n${info.example}'),
-                );
-              }).toList(),
-              onChanged: (VehicleCategory? value) {
-                setState(() {
-                  selectedVehicle = value ?? VehicleCategory.none;
-                });
+              textCapitalization: TextCapitalization.characters,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Plat nomor kendaraan wajib diisi';
+                }
+                return null;
               },
             ),
-            if (selectedVehicle != VehicleCategory.none) ...[
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: plateNumberController,
-                decoration: const InputDecoration(
-                  labelText: 'Nomor Plat Kendaraan',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (selectedVehicle != VehicleCategory.none && (value == null || value.isEmpty)) {
-                    return 'Nomor plat kendaraan harus diisi';
-                  }
-                  return null;
-                },
-              ),
-            ],
           ],
         ),
       ),
@@ -289,6 +225,19 @@ class _FormDataScreenState extends State<FormDataScreen> {
                 },
               ),
             ],
+            if (index == 0 && passenger.type == PassengerType.adult) ...[
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Text('Gunakan data profil', style: TextStyle(fontSize: 14)),
+                  const SizedBox(width: 8),
+                  Switch(
+                    value: _useProfileDataForFirstPassenger,
+                    onChanged: _updateFirstPassengerFromProfile,
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -335,19 +284,14 @@ class _FormDataScreenState extends State<FormDataScreen> {
       PassengerType.elderly => 'Lansia',
     };
   }
-
   void _submitForm() {
-    print('Starting form submission...');
-    print('Number of passengers: ${_passengers.length}');
-
     if (_formKey.currentState?.validate() ?? false) {
       try {
         final passengers = <Passenger>[];
+        final profile = context.read<ProfileProvider>().userProfile;
         
         // Iterate through each passenger form
-        for (var form in _passengers) {
-          print('Processing passenger type: ${form.type}');
-          
+        for (var form in _passengers) {          
           // Create passenger object based on type
           final passenger = Passenger(
             name: form.nameController.text,
@@ -394,18 +338,17 @@ class _FormDataScreenState extends State<FormDataScreen> {
           departureTime: widget.ticket.departureTime,
           price: totalPrice,
           shipName: widget.ticket.shipName,
-          ticketClass: widget.ticket.ticketClass,
-          status: widget.ticket.status,
+          ticketClass: widget.ticket.ticketClass,          status: widget.ticket.status,
           passengerCounts: actualCounts,
           passengers: passengers,
-          bookerName: bookerNameController.text,
-          bookerPhone: bookerPhoneController.text,
-          bookerEmail: bookerEmailController.text,
+          bookerName: profile?.name ?? '',
+          bookerPhone: profile?.phoneNumber ?? '',
+          bookerEmail: profile?.email ?? '',
           vehicleCategory: selectedVehicle,
           vehiclePlateNumber: selectedVehicle != VehicleCategory.none ? plateNumberController.text : null,
         );
 
-        // Navigasi ke halaman pembayaran
+        // Navigate to payment screen
         if (mounted) {
           Navigator.push(
             context,

@@ -2,13 +2,13 @@ import 'package:ferry_ticket_app/screens/tiket/ticket_popUp.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'dart:convert';
 import 'package:geolocator/geolocator.dart';
 
 import 'package:ferry_ticket_app/providers/schedule_provider.dart';
 import 'package:ferry_ticket_app/providers/weather_provider.dart';
 import 'package:ferry_ticket_app/models/ticket.dart';
 import 'package:ferry_ticket_app/models/passenger.dart';
+import 'package:ferry_ticket_app/models/vehicle_category.dart';
 import 'package:ferry_ticket_app/screens/tiket/form_data_screen.dart';
 
 import 'components/weather_card.dart';
@@ -17,6 +17,7 @@ import 'components/passenger_selector.dart';
 import 'components/port_selector.dart';
 import 'components/service_selector.dart';
 import 'components/date_time_selector.dart';
+import 'components/vehicle_category_selector.dart';
 import 'utils/time_utils.dart';
 
 const Color sapphire = Color(0xFF0F52BA);
@@ -31,8 +32,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
-  bool _isInitialized = false;
-  bool _isSearching = false;
+  bool _isInitialized = false;  bool _isSearching = false;
+  VehicleCategory? _selectedCategory;
 
   // Fixed ports
   final String port1 = 'Merak';
@@ -285,19 +286,37 @@ class _HomeScreenState extends State<HomeScreen> {
       _selectedTimeString =
           availableTimes.isNotEmpty ? availableTimes.first : null;
     }
-  }
-
-  Future<void> _searchSchedules() async {
+  }  Future<void> _searchSchedules() async {
     if (!_passengerTypeEnabled || _selectedTimeString == null) return;
+    if (_selectedCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Silakan pilih golongan'))
+      );
+      return;
+    }
 
     setState(() => _isSearching = true);
 
-    try {      // Membuat Map passengerCounts yang benar
+    try {
+      // Membuat Map passengerCounts yang benar
       final Map<PassengerType, int> passengerCounts = {
         PassengerType.adult: _passengerCounts[PassengerType.adult] ?? 0,
         PassengerType.child: _passengerCounts[PassengerType.child] ?? 0,
         PassengerType.elderly: _passengerCounts[PassengerType.elderly] ?? 0,
       };
+
+      // Get vehicle info for the selected category
+      final vehicleInfo = VehicleInfo.categories[_selectedCategory]!;
+      
+      // Calculate price based on vehicle category and service type
+      double basePrice = _selectedServiceType == 'Regular' ? 
+          vehicleInfo.basePrice : 
+          vehicleInfo.basePrice * 1.5;
+          
+      if (_selectedCategory == VehicleCategory.none) {      // For pedestrians, calculate total price based on passenger counts
+        basePrice = (passengerCounts[PassengerType.adult] ?? 0) * basePrice +
+                   (passengerCounts[PassengerType.child] ?? 0) * (basePrice * 2/3);
+      }
 
       final ticket = Ticket(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -307,11 +326,12 @@ class _HomeScreenState extends State<HomeScreen> {
         departureTime: DateTime.parse(
           "${DateFormat('yyyy-MM-dd').format(_selectedDate)} ${_selectedTimeString!}:00",
         ),
-        price: _selectedServiceType == 'Regular' ? 150000 : 200000,
+        price: basePrice,
         shipName: _selectedServiceType == 'Regular' ? "KMP Gajah Mada" : "KMP Jatra III",
         ticketClass: _selectedServiceType,
         status: "Aktif",
         passengerCounts: passengerCounts,
+        vehicleCategory: _selectedCategory,
       );
 
       if (!mounted) return;
@@ -420,8 +440,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 toController: _toController,
                                 onSwapPorts: _swapPorts,
                               ),
-                              const SizedBox(height: 16),
-                              PassengerSelector(
+                              const SizedBox(height: 16),                              PassengerSelector(
                                 passengerCounts: _passengerCounts,
                                 onCountChanged: (type, count) {
                                   setState(() {
@@ -441,6 +460,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                   });
                                 },
                                 enabled: _serviceTypeEnabled,
+                              ),
+                              const SizedBox(height: 16),
+                              VehicleCategorySelector(
+                                selectedCategory: _selectedCategory,
+                                onCategoryChanged: (category) {
+                                  setState(() {
+                                    _selectedCategory = category;
+                                  });
+                                },
+                                serviceType: _selectedServiceType,
                               ),
                               const SizedBox(height: 16),
                               DateTimeSelector(
