@@ -373,6 +373,18 @@ class _HomeScreenState extends State<HomeScreen> {
     return const SizedBox.shrink();
   }
 
+  Widget _buildContent() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      controller: _scrollController,
+      children: [
+        if (_currentPosition != null) WeatherCard(isNearMerak: _isNearMerak),
+        const SizedBox(height: 16),
+        // ...rest of your existing content...
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -416,16 +428,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Consumer<WeatherProvider>(
-                        builder: (context, weatherProvider, child) {
-                          return Column(
-                            children: [
-                              WeatherCard(weatherProvider: weatherProvider),
-                              _buildLocationInfo(), // Menampilkan info lokasi
-                            ],
-                          );
-                        },
+                    children: [                      Column(
+                        children: [
+                          WeatherCard(isNearMerak: _isNearMerak),
+                          const SizedBox(height: 8),
+                          _buildLocationInfo(), // Menampilkan info lokasi
+                        ],
                       ),
                       const TripTypeSelector(),
                       Card(
