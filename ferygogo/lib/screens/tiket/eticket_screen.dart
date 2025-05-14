@@ -134,6 +134,13 @@ class ETicketScreen extends StatelessWidget {
   }
 
   Widget _buildTicketDetails() {
+    final basePrice = ticket.vehicleCategory != null && ticket.vehicleCategory != VehicleCategory.none
+        ? VehicleInfo.categories[ticket.vehicleCategory]!.basePrice
+        : VehicleInfo.categories[VehicleCategory.none]!.basePrice;
+    final passengerCount = ticket.passengers.length;
+    final serviceFee = 2500.0 * passengerCount;
+    final totalAmount = (basePrice * passengerCount) + serviceFee;
+
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -155,13 +162,41 @@ class ETicketScreen extends StatelessWidget {
           ),
           _buildDetailRow('Kelas', ticket.ticketClass),
           _buildDetailRow('Status', ticket.status),
+          if (ticket.vehicleCategory != null && ticket.vehicleCategory != VehicleCategory.none) ...[
+            _buildDetailRow(
+              'Golongan',
+              VehicleInfo.categories[ticket.vehicleCategory]!.name,
+            ),
+          ],
+          const Divider(height: 24),
+          _buildDetailRow(
+            'Harga Tiket',
+            NumberFormat.currency(
+              locale: 'id',
+              symbol: 'Rp ',
+              decimalDigits: 0,
+            ).format(basePrice),
+          ),
+          _buildDetailRow(
+            'Jumlah Penumpang',
+            '$passengerCount orang',
+          ),
+          _buildDetailRow(
+            'Biaya Layanan',
+            NumberFormat.currency(
+              locale: 'id',
+              symbol: 'Rp ',
+              decimalDigits: 0,
+            ).format(serviceFee),
+          ),
+          const Divider(height: 24),
           _buildDetailRow(
             'Total Harga',
             NumberFormat.currency(
               locale: 'id',
               symbol: 'Rp ',
               decimalDigits: 0,
-            ).format(ticket.price * ticket.passengers.length),
+            ).format(totalAmount),
           ),
         ],
       ),
