@@ -31,20 +31,60 @@ class WeatherInfo {
     'icon': icon,
     'hourlyForecast': hourlyForecast.map((h) => h.toJson()).toList(),
   };
+  factory WeatherInfo.fromMap(Map<String, dynamic> data) {
+    final current = data['current'] as Map<String, dynamic>;
+    
+    // Calculate wave condition based on wind speed
+    final windSpeed = (current['wind']['speed'] as num).toDouble();
+    String waveCondition;
+    if (windSpeed < 5.5) {
+      waveCondition = 'Tenang';
+    } else if (windSpeed < 7.9) {
+      waveCondition = 'Ringan';
+    } else if (windSpeed < 10.7) {
+      waveCondition = 'Sedang';
+    } else {
+      waveCondition = 'Tinggi';
+    }
 
-  factory WeatherInfo.fromJson(Map<String, dynamic> json) {
     return WeatherInfo(
-      cityName: json['cityName'] ?? '',
-      temperature: (json['temperature'] ?? 0.0).toDouble(),
-      description: json['description'] ?? '',
-      humidity: (json['humidity'] ?? 0.0).toDouble(),
-      windSpeed: (json['windSpeed'] ?? 0.0).toDouble(),
-      waveCondition: json['waveCondition'] ?? '',
-      icon: json['icon'] ?? '',
-      hourlyForecast: (json['hourlyForecast'] as List?)
-          ?.map((h) => HourlyForecast.fromJson(h as Map<String, dynamic>))
-          .toList() ?? [],
+      cityName: data['cityName'] ?? '',
+      temperature: (current['temperature'] as num?)?.toDouble() ?? 0.0,
+      description: current['summary'] as String? ?? 'Tidak ada data',
+      humidity: (current['humidity'] as num?)?.toDouble() ?? 0.0,
+      windSpeed: windSpeed,
+      waveCondition: waveCondition,
+      icon: _mapMeteosourceIcon(current['icon'] as String? ?? ''),
+      hourlyForecast: _parseHourlyForecast(data['hourly'] as List<dynamic>? ?? []),
     );
+  }
+
+  static List<HourlyForecast> _parseHourlyForecast(List<dynamic> hourlyData) {
+    return hourlyData.map((hour) {
+      final Map<String, dynamic> hourMap = hour as Map<String, dynamic>;
+      return HourlyForecast(
+        time: DateTime.fromMillisecondsSinceEpoch(hourMap['date'] * 1000),
+        temperature: (hourMap['temperature'] as num).toDouble(),
+        icon: _mapMeteosourceIcon(hourMap['icon_code'] as String? ?? ''),
+        windSpeed: ((hourMap['wind'] as Map<String, dynamic>)['speed'] as num).toDouble(),
+      );
+    }).toList();
+  }
+
+  static String _mapMeteosourceIcon(String meteosourceIcon) {
+    final Map<String, String> iconMapping = {
+      'clear-day': '01d',
+      'clear-night': '01n',
+      'cloudy': '04d',
+      'partly-cloudy-day': '02d',
+      'partly-cloudy-night': '02n',
+      'rain': '10d',
+      'snow': '13d',
+      'thunderstorm': '11d',
+      'fog': '50d',
+    };
+
+    return iconMapping[meteosourceIcon] ?? '01d';
   }
 }
 

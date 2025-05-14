@@ -1,134 +1,193 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:firebase_database/firebase_database.dart';
 import '../models/weather_info.dart';
-import '../services/weather_service.dart';
 
 class WeatherProvider with ChangeNotifier {
-  final WeatherService _weatherService = WeatherService();
+  final DatabaseReference _database = FirebaseDatabase.instance.ref();
   WeatherInfo? _weatherInfo;
   bool _isLoading = false;
   String? _error;
+  Timer? _refreshTimer;
+  StreamSubscription<DatabaseEvent>? _weatherSubscription;
+
+  // API Configuration
+  static const String _baseUrl = 'https://www.meteosource.com/api/v1/free/point';
+  static const String _apiKey = 'rzx8nw1h83ij7mrz3e35vqjb2w4zj7wv9nx2qqjq';
+
+  // Koordinat Pelabuhan
+  static const Map<String, Map<String, double>> _portCoordinates = {
+    'merak': {
+      'lat': -5.8933,
+      'lon': 106.0056,
+    },
+    'bakauheni': {
+      'lat': -5.8727,
+      'lon': 105.7526,
+    },
+  };
 
   WeatherInfo? get weatherInfo => _weatherInfo;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // Koordinat pelabuhan
-  static const double merakLat = -6.1141;
-  static const double merakLong = 105.8172;
-  static const double bakauheniLat = -5.8622;
-  static const double bakauheniLong = 105.7517;
+  WeatherProvider() {
+    _startAutoRefresh();
+  }
 
-  Future<void> loadWeatherInfo({bool isNearMerak = true}) async {
-    _isLoading = true;
-    _error = null;
+  void _setLoading(bool value) {
+    _isLoading = value;
     notifyListeners();
+  }
+
+  void _setError(String? value) {
+    _error = value;
+    notifyListeners();
+  }
+
+  Map<String, dynamic> _convertToMap(dynamic data) {
+    if (data == null) return {};
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) {
+      return Map<String, dynamic>.from(data.map((key, value) {
+        if (value is Map) {
+          return MapEntry(key.toString(), _convertToMap(value));
+        } else if (value is List) {
+          return MapEntry(
+            key.toString(),
+            value.map((e) => e is Map ? _convertToMap(e) : e).toList(),
+          );
+        }
+        return MapEntry(key.toString(), value);
+      }));
+    }
+    return {};
+  }
+
+  Future<Map<String, dynamic>> _fetchWeatherData(bool isNearMerak) async {
+    final coordinates = isNearMerak ? _portCoordinates['merak']! : _portCoordinates['bakauheni']!;
 
     try {
-      final location = isNearMerak ? 'merak' : 'bakauheni';
-      
-      // Cek data di Firebase dulu
-      final savedWeather = await _weatherService.getWeatherData(location);
-      if (savedWeather != null) {
-        _weatherInfo = savedWeather;
-        notifyListeners();
-      }
+      final queryParams = {
+        'lat': coordinates['lat'].toString(),
+        'lon': coordinates['lon'].toString(),
+        'sections': 'current,hourly',
+        'units': 'metric',
+        'key': _apiKey,
+      };
 
-      // Fetch data baru dari API
-      final weatherData = await _fetchWeatherData(
-        isNearMerak ? merakLat : bakauheniLat,
-        isNearMerak ? merakLong : bakauheniLong,
-        location
-      );
-      
-      // Simpan ke Firebase
-      await _weatherService.saveWeatherData(location, weatherData);
-      
-      // Setup real-time listener
-      _weatherService.streamWeatherData(location).listen(
-        (weather) {
-          if (weather != null) {
-            _weatherInfo = weather;
-            notifyListeners();
+      final uri = Uri.parse(_baseUrl).replace(queryParameters: queryParams);
+      final response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        final List<Map<String, dynamic>> processedHourly = [];
+        if (data['hourly']?['data'] != null) {
+          for (var hour in data['hourly']['data']) {
+            final Map<String, dynamic> processedHour = Map.from(hour);
+            if (hour['date'] is String) {
+              final DateTime dateTime = DateTime.parse(hour['date']);
+              processedHour['date'] = dateTime.millisecondsSinceEpoch ~/ 1000;
+            }
+            processedHourly.add(processedHour);
           }
-        },
-        onError: (e) {
-          _error = 'Error streaming weather data: $e';
-          notifyListeners();
         }
-      );
 
+        return {
+          'cityName': isNearMerak ? 'Merak' : 'Bakauheni',
+          'current': {
+            'temperature': data['current']['temperature'],
+            'humidity': data['current']['humidity'],
+            'wind': {
+              'speed': data['current']['wind']['speed'],
+            },
+            'summary': data['current']['summary'],
+            'icon': data['current']['icon_code'],
+          },
+          'hourly': processedHourly,
+        };
+      } else {
+        print('API Response: ${response.body}');
+        throw Exception('Failed to load weather data: ${response.statusCode}');
+      }
     } catch (e) {
-      _error = 'Failed to load weather data: $e';
-      notifyListeners();
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      print('Error fetching weather data: $e');
+      throw Exception('Error fetching weather data: $e');
     }
   }
 
-  Future<WeatherInfo> _fetchWeatherData(
-    double lat, 
-    double lon, 
-    String cityName
-  ) async {
-    const apiKey = 'YOUR_OPENWEATHER_API_KEY'; // Ganti dengan API key Anda
-    final url = 'https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$apiKey&units=metric&lang=id';
-    final forecastUrl = 'https://api.openweathermap.org/data/2.5/forecast?lat=$lat&lon=$lon&appid=$apiKey&units=metric&lang=id';
-
+  Future<void> loadWeatherInfo({bool isNearMerak = true}) async {
     try {
-      // Ambil data cuaca saat ini
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode != 200) {
-        throw Exception('Failed to load weather data');
-      }
-      final weatherData = json.decode(response.body);
+      _setLoading(true);
+      _setError(null);
 
-      // Ambil data prakiraan cuaca
-      final forecastResponse = await http.get(Uri.parse(forecastUrl));
-      if (forecastResponse.statusCode != 200) {
-        throw Exception('Failed to load forecast data');
-      }
-      final forecastData = json.decode(forecastResponse.body);
+      final weatherData = await _fetchWeatherData(isNearMerak);
 
-      // Olah data prakiraan per jam
-      final List<HourlyForecast> hourlyForecasts = [];
-      for (var item in (forecastData['list'] as List).take(8)) {
-        hourlyForecasts.add(HourlyForecast(
-          time: DateTime.fromMillisecondsSinceEpoch(item['dt'] * 1000),
-          temperature: item['main']['temp'].toDouble(),
-          icon: item['weather'][0]['icon'],
-          windSpeed: item['wind']['speed'].toDouble(),
-        ));
-      }
+      // Simpan ke Firebase
+      await _database.child('weather').set({
+        'data': weatherData,
+        'timestamp': ServerValue.timestamp,
+        'location': isNearMerak ? 'Merak' : 'Bakauheni',
+      });
 
-      // Tentukan kondisi gelombang berdasarkan kecepatan angin
-      String waveCondition;
-      final windSpeed = weatherData['wind']['speed'].toDouble();
-      if (windSpeed < 5.5) {
-        waveCondition = 'Tenang';
-      } else if (windSpeed < 7.9) {
-        waveCondition = 'Ringan';
-      } else if (windSpeed < 10.7) {
-        waveCondition = 'Sedang';
-      } else {
-        waveCondition = 'Tinggi';
-      }
-
-      return WeatherInfo(
-        cityName: cityName,
-        temperature: weatherData['main']['temp'].toDouble(),
-        description: weatherData['weather'][0]['description'],
-        humidity: weatherData['main']['humidity'].toDouble(),
-        windSpeed: windSpeed,
-        waveCondition: waveCondition,
-        icon: weatherData['weather'][0]['icon'],
-        hourlyForecast: hourlyForecasts,
-      );
+      _weatherInfo = WeatherInfo.fromMap(weatherData);
+      notifyListeners();
     } catch (e) {
-      print('Error fetching weather data: $e');
-      rethrow;
+      _setError('Gagal memuat informasi cuaca: ${e.toString()}');
+
+      // Ambil dari cache Firebase
+      try {
+        final snapshot = await _database.child('weather').get();
+        if (snapshot.exists && snapshot.value != null) {
+          final rawData = snapshot.value as Map;
+          final cachedData = _convertToMap(rawData);
+          if (cachedData['data'] != null) {
+            _weatherInfo = WeatherInfo.fromMap(_convertToMap(cachedData['data']));
+            notifyListeners();
+          }
+        }
+      } catch (e) {
+        print('Failed to load cached weather data: $e');
+      }
+    } finally {
+      _setLoading(false);
     }
+  }
+
+  void _startAutoRefresh() {
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer.periodic(const Duration(minutes: 30), (_) {
+      loadWeatherInfo();
+    });
+
+    _weatherSubscription = _database.child('weather').onValue.listen(
+      (event) {
+        if (event.snapshot.exists && event.snapshot.value != null) {
+          try {
+            final rawData = event.snapshot.value as Map;
+            final data = _convertToMap(rawData);
+            if (data['data'] != null) {
+              _weatherInfo = WeatherInfo.fromMap(_convertToMap(data['data']));
+              notifyListeners();
+            }
+          } catch (e) {
+            print('Error parsing Firebase weather data: $e');
+          }
+        }
+      },
+      onError: (error) {
+        print('Error in Firebase weather subscription: $error');
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    _weatherSubscription?.cancel();
+    super.dispose();
   }
 }
