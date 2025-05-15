@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/user_profile.dart';
 import '../../providers/profile_provider.dart';
+import '../../providers/theme_provider.dart';
 import 'package:intl/intl.dart';
 import 'profile_logic.dart';
 
@@ -67,6 +68,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildAppBar(ProfileProvider provider) {
     final profile = provider.userProfile;
+    final themeProvider = Provider.of<ThemeProvider>(context);
     
     return SliverAppBar(
       expandedHeight: 200,
@@ -74,6 +76,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: primaryColor,
       foregroundColor: Colors.white,
       title: const Text('Profil'),
+      actions: [
+        IconButton(
+          icon: Icon(
+            themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+            color: Colors.white,
+          ),
+          onPressed: () => themeProvider.toggleTheme(),
+          tooltip: themeProvider.isDarkMode ? 'Mode Terang' : 'Mode Gelap',
+        ),
+        IconButton(
+          icon: const Icon(Icons.logout),
+          onPressed: () => _showLogoutDialog(),
+          tooltip: 'Keluar',
+        ),
+      ],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: BoxDecoration(
@@ -117,13 +134,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ) : null,
         ),
       ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.logout),
-          onPressed: () => _showLogoutDialog(),
-          tooltip: 'Keluar',
-        ),
-      ],
     );
   }
 
