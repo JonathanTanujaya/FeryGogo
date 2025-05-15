@@ -49,7 +49,6 @@ flutter:
     - assets/waves.png
     - assets/ferygogo.png
     - assets/fery.jpg
-    - assets/icons/
   
   fonts:
     - family: Poppins

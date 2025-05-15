@@ -18,7 +18,7 @@ class WeatherProvider with ChangeNotifier {
   static const String _apiKey = 'rzx8nw1h83ij7mrz3e35vqjb2w4zj7wv9nx2qqjq';
 
   // Koordinat Pelabuhan
-  static const Map<String, Map<String, double>> _portCoordinates = {
+  static const Map<String, Map<String, double>> _portCoordinates = { 
     'merak': {
       'lat': -5.8933,
       'lon': 106.0056,
