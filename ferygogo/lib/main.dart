@@ -21,7 +21,7 @@ import 'screens/history_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'utils/auth_guard.dart';
 
-// Konstanta untuk mode debug
+// Konstanta untuk mode debug.
 const bool isDebugMode = true; // Set ke false untuk production
 
 Future<void> main() async {
