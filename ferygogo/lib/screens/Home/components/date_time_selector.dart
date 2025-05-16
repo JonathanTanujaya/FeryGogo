@@ -33,9 +33,9 @@ class DateTimeSelector extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: enabled 
-                      ? const Color(0xFFF7F9FC)
-                      : Colors.grey.shade200,
+                    color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white10
+                      : (enabled ? const Color(0xFFF7F9FC) : Colors.grey.shade200),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -46,7 +46,9 @@ class DateTimeSelector extends StatelessWidget {
                       Text(
                         DateFormat('dd MMM yyyy').format(selectedDate),
                         style: TextStyle(
-                          color: enabled ? Colors.black87 : Colors.grey.shade600,
+                          color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : (enabled ? Colors.black87 : Colors.grey.shade600),
                         ),
                       ),
                     ],
@@ -64,9 +66,9 @@ class DateTimeSelector extends StatelessWidget {
               const Text('Waktu', style: TextStyle(color: Colors.grey)),
               Container(
                 decoration: BoxDecoration(
-                  color: enabled 
-                    ? const Color(0xFFF7F9FC)
-                    : Colors.grey.shade200,
+                  color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white10
+                    : (enabled ? const Color(0xFFF7F9FC) : Colors.grey.shade200),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: DropdownButtonHideUnderline(
@@ -80,7 +82,14 @@ class DateTimeSelector extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
                           ),
-                          child: Text(time),
+                          child: Text(
+                            time,
+                            style: TextStyle(
+                              color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.white
+                                : (enabled ? Colors.black87 : Colors.grey.shade600),
+                            ),
+                          ),
                         ),
                       );
                     }).toList(),

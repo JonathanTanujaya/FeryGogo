@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/auth_provider.dart';
+import 'package:ferygogo/providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -171,19 +171,44 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
                     validator: _validateEmail,
+                    style: TextStyle(
+                      color: Theme.of(context).brightness == Brightness.dark 
+                        ? Colors.white 
+                        : Colors.black87,
+                    ),
                     decoration: InputDecoration(
                       labelText: 'Email',
-                      prefixIcon: const Icon(Icons.email),
+                      prefixIcon: Icon(
+                        Icons.email,
+                        color: Theme.of(context).brightness == Brightness.dark 
+                          ? Colors.white70 
+                          : Colors.grey[600],
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.grey),
+                        borderSide: BorderSide(
+                          color: Theme.of(context).brightness == Brightness.dark 
+                            ? Colors.white24 
+                            : Colors.grey[400]!,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF0F52BA)),
+                        borderSide: BorderSide(
+                          color: Theme.of(context).primaryColor,
+                        ),
+                      ),
+                      fillColor: Theme.of(context).brightness == Brightness.dark 
+                        ? Colors.white10 
+                        : Colors.grey[50],
+                      filled: true,
+                      labelStyle: TextStyle(
+                        color: Theme.of(context).brightness == Brightness.dark 
+                          ? Colors.white70 
+                          : Colors.grey[700],
                       ),
                     ),
                   ),
@@ -194,14 +219,27 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     controller: _passwordController,
                     obscureText: !_isPasswordVisible,
                     validator: _validatePassword,
+                    style: TextStyle(
+                      color: Theme.of(context).brightness == Brightness.dark 
+                        ? Colors.white 
+                        : Colors.black87,
+                    ),
                     decoration: InputDecoration(
                       labelText: 'Password',
-                      prefixIcon: const Icon(Icons.lock),
+                      prefixIcon: Icon(
+                        Icons.lock,
+                        color: Theme.of(context).brightness == Brightness.dark 
+                          ? Colors.white70 
+                          : Colors.grey[600],
+                      ),
                       suffixIcon: IconButton(
                         icon: Icon(
                           _isPasswordVisible
                               ? Icons.visibility_off
                               : Icons.visibility,
+                          color: Theme.of(context).brightness == Brightness.dark 
+                            ? Colors.white70 
+                            : Colors.grey[600],
                         ),
                         onPressed: () {
                           setState(() {
@@ -214,11 +252,26 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.grey),
+                        borderSide: BorderSide(
+                          color: Theme.of(context).brightness == Brightness.dark 
+                            ? Colors.white24 
+                            : Colors.grey[400]!,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF0F52BA)),
+                        borderSide: BorderSide(
+                          color: Theme.of(context).primaryColor,
+                        ),
+                      ),
+                      fillColor: Theme.of(context).brightness == Brightness.dark 
+                        ? Colors.white10 
+                        : Colors.grey[50],
+                      filled: true,
+                      labelStyle: TextStyle(
+                        color: Theme.of(context).brightness == Brightness.dark 
+                          ? Colors.white70 
+                          : Colors.grey[700],
                       ),
                     ),
                   ),

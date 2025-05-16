@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 const Color sapphire = Color(0xFF0F52BA);
+const Color blackInDarkMode = Colors.white;
 
 class PortSelector extends StatelessWidget {
   final TextEditingController fromController;
@@ -23,20 +24,30 @@ class PortSelector extends StatelessWidget {
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Pelabuhan Awal',
-                  style: TextStyle(color: Colors.grey)),
+            children: [              Text('Pelabuhan Awal',
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey[300]
+                      : Colors.grey[600],
+                  )),
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF7F9FC),
+                  color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white10
+                    : const Color(0xFFF7F9FC),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: TextFormField(
                   controller: fromController,
                   readOnly: true,
                   enabled: enabled,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : Colors.black87,
+                  ),
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(
                       borderSide: BorderSide.none,
                     ),
                     contentPadding: EdgeInsets.symmetric(
@@ -54,9 +65,14 @@ class PortSelector extends StatelessWidget {
           child: IconButton(
             onPressed: enabled ? onSwapPorts : null,
             icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: enabled ? sapphire : Colors.grey,
+              padding: const EdgeInsets.all(8),              decoration: BoxDecoration(
+                color: enabled 
+                  ? (Theme.of(context).brightness == Brightness.dark
+                      ? sapphire.withOpacity(0.8)
+                      : sapphire)
+                  : (Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey[800]
+                      : Colors.grey),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(
@@ -69,18 +85,28 @@ class PortSelector extends StatelessWidget {
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Pelabuhan Tujuan',
-                  style: TextStyle(color: Colors.grey)),
+            children: [              Text('Pelabuhan Tujuan',
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey[400]
+                      : Colors.grey[600],
+                  )),
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF7F9FC),
+                  color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white10
+                    : const Color(0xFFF7F9FC),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: TextFormField(
                   controller: toController,
                   readOnly: true,
                   enabled: enabled,
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : Colors.black87,
+                  ),
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(
                       borderSide: BorderSide.none,

@@ -22,7 +22,9 @@ class PassengerSelector extends StatelessWidget {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFF7F9FC),
+            color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white10 
+                    : const Color(0xFFF7F9FC),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(

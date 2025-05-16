@@ -25,9 +25,11 @@ class VehicleCategorySelector extends StatelessWidget {
       builder: (BuildContext context) {
         return Container(
           height: MediaQuery.of(context).size.height * 0.75,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.grey[900]
+              : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
             children: [
@@ -37,7 +39,9 @@ class VehicleCategorySelector extends StatelessWidget {
                 height: 4,
                 width: 40,
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.grey[700]
+                    : Colors.grey[300],
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -46,22 +50,34 @@ class VehicleCategorySelector extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    const Text(
+                    Text(
                       'Pilih Golongan',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black,
                       ),
                     ),
                     const Spacer(),
                     IconButton(
-                      icon: const Icon(Icons.close),
+                      icon: Icon(Icons.close,
+                        color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black,
+                      ),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),
               ),
-              const Divider(height: 1),
+              Divider(
+                height: 1,
+                color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey[800]
+                  : Colors.grey[300],
+              ),
               // List of categories
               Expanded(
                 child: ListView.builder(
@@ -84,9 +100,12 @@ class VehicleCategorySelector extends StatelessWidget {
                                   children: [
                                     Text(
                                       vehicleInfo.name,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
+                                        color: Theme.of(context).brightness == Brightness.dark
+                                          ? Colors.white
+                                          : Colors.black,
                                       ),
                                     ),
                                     const SizedBox(height: 4),
@@ -94,7 +113,9 @@ class VehicleCategorySelector extends StatelessWidget {
                                       vehicleInfo.description,
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color: Colors.grey[600],
+                                        color: Theme.of(context).brightness == Brightness.dark
+                                          ? Colors.grey[400]
+                                          : Colors.grey[600],
                                       ),
                                     ),
                                     if (vehicleInfo.example != '-') ...[
@@ -103,7 +124,9 @@ class VehicleCategorySelector extends StatelessWidget {
                                         'Contoh: ${vehicleInfo.example}',
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: Colors.grey[600],
+                                          color: Theme.of(context).brightness == Brightness.dark
+                                            ? Colors.grey[400]
+                                            : Colors.grey[600],
                                           fontStyle: FontStyle.italic,
                                         ),
                                       ),
@@ -138,7 +161,12 @@ class VehicleCategorySelector extends StatelessWidget {
                           },
                         ),
                         if (index < VehicleInfo.categories.length - 1)
-                          const Divider(height: 1),
+                          Divider(
+                            height: 1,
+                            color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey[800]
+                              : Colors.grey[300],
+                          ),
                       ],
                     );
                   },
@@ -161,11 +189,14 @@ class VehicleCategorySelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Golongan',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
+            color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white
+              : Colors.black,
           ),
         ),
         const SizedBox(height: 8),
@@ -174,7 +205,11 @@ class VehicleCategorySelector extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey[300]!),
+              border: Border.all(
+                color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey[700]!
+                  : Colors.grey[300]!,
+              ),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -187,8 +222,13 @@ class VehicleCategorySelector extends StatelessWidget {
                         selectedVehicleInfo?.name ?? 'Pilih Golongan',
                         style: TextStyle(
                           fontSize: 16,
-                          color: selectedVehicleInfo != null ? 
-                              Colors.black : Colors.grey[600],
+                          color: selectedVehicleInfo != null
+                            ? Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white
+                              : Colors.black
+                            : Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey[400]
+                              : Colors.grey[600],
                         ),
                       ),
                       if (selectedVehicleInfo != null) ...[
@@ -197,7 +237,9 @@ class VehicleCategorySelector extends StatelessWidget {
                           selectedVehicleInfo.description,
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey[600],
+                            color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey[400]
+                              : Colors.grey[600],
                           ),
                         ),
                       ],
@@ -218,7 +260,9 @@ class VehicleCategorySelector extends StatelessWidget {
                   ),
                 Icon(
                   Icons.keyboard_arrow_down,
-                  color: Colors.grey[600],
+                  color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.grey[400]
+                    : Colors.grey[600],
                 ),
               ],
             ),

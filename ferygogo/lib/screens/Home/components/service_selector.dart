@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+const Color sapphire = Color(0xFF0F52BA);
+const Color blackInDarkMode = Colors.white;
+
 class ServiceSelector extends StatelessWidget {
   final List<String> serviceTypes;
   final String selectedServiceType;
@@ -20,9 +23,10 @@ class ServiceSelector extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text('Jenis Layanan', style: TextStyle(color: Colors.grey)),
-        Container(
-          decoration: BoxDecoration(
-            color: enabled ? const Color(0xFFF7F9FC) : Colors.grey.shade200,
+        Container(          decoration: BoxDecoration(
+            color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white10
+              : (enabled ? const Color(0xFFF7F9FC) : Colors.grey.shade200),
             borderRadius: BorderRadius.circular(8),
           ),
           child: DropdownButtonFormField<String>(
@@ -44,7 +48,9 @@ class ServiceSelector extends StatelessWidget {
               ),
             ),
             style: TextStyle(
-              color: enabled ? Colors.black87 : Colors.grey.shade600,
+              color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white
+                : (enabled ? Colors.black87 : Colors.grey.shade600),
             ),
           ),
         ),
