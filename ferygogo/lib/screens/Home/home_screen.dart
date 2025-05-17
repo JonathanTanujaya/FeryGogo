@@ -32,7 +32,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
-  bool _isInitialized = false;  bool _isSearching = false;
+  bool _isInitialized = false;
+  bool _isSearching = false;
   VehicleCategory? _selectedCategory;
 
   // Fixed ports
@@ -99,8 +100,13 @@ class _HomeScreenState extends State<HomeScreen> {
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Layanan lokasi dinonaktifkan. Silakan aktifkan untuk melanjutkan.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Layanan lokasi dinonaktifkan. Silakan aktifkan untuk melanjutkan.',
+            ),
+          ),
+        );
       }
       // Buka pengaturan lokasi
       await Geolocator.openLocationSettings();
@@ -114,8 +120,9 @@ class _HomeScreenState extends State<HomeScreen> {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Izin lokasi ditolak')));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Izin lokasi ditolak')));
         }
         return false;
       }
@@ -127,24 +134,26 @@ class _HomeScreenState extends State<HomeScreen> {
         await showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (BuildContext context) => AlertDialog(
-            title: const Text('Izin Lokasi Diperlukan'),
-            content: const Text(
-                'Aplikasi membutuhkan akses lokasi untuk memberikan layanan terbaik. Mohon izinkan akses lokasi di pengaturan.'),
-            actions: <Widget>[
-              TextButton(
-                child: const Text('Batal'),
-                onPressed: () => Navigator.of(context).pop(),
+          builder:
+              (BuildContext context) => AlertDialog(
+                title: const Text('Izin Lokasi Diperlukan'),
+                content: const Text(
+                  'Aplikasi membutuhkan akses lokasi untuk memberikan layanan terbaik. Mohon izinkan akses lokasi di pengaturan.',
+                ),
+                actions: <Widget>[
+                  TextButton(
+                    child: const Text('Batal'),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  TextButton(
+                    child: const Text('Buka Pengaturan'),
+                    onPressed: () async {
+                      Navigator.of(context).pop();
+                      await Geolocator.openAppSettings();
+                    },
+                  ),
+                ],
               ),
-              TextButton(
-                child: const Text('Buka Pengaturan'),
-                onPressed: () async {
-                  Navigator.of(context).pop();
-                  await Geolocator.openAppSettings();
-                },
-              ),
-            ],
-          ),
         );
       }
       return false;
@@ -157,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       // Minta izin lokasi terlebih dahulu
       final hasPermission = await _handleLocationPermission();
-      
+
       if (!hasPermission) {
         // Jika izin ditolak, gunakan Merak sebagai default
         setState(() {
@@ -206,7 +215,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Update weather info berdasarkan lokasi
       if (mounted) {
-        final weatherProvider = Provider.of<WeatherProvider>(context, listen: false);
+        final weatherProvider = Provider.of<WeatherProvider>(
+          context,
+          listen: false,
+        );
         await weatherProvider.loadWeatherInfo(isNearMerak: _isNearMerak);
       }
     } catch (e) {
@@ -222,7 +234,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _initializeWeather() async {
     if (mounted) {
-      final weatherProvider = Provider.of<WeatherProvider>(context, listen: false);
+      final weatherProvider = Provider.of<WeatherProvider>(
+        context,
+        listen: false,
+      );
       await weatherProvider.loadWeatherInfo(isNearMerak: _isNearMerak);
     }
   }
@@ -286,12 +301,14 @@ class _HomeScreenState extends State<HomeScreen> {
       _selectedTimeString =
           availableTimes.isNotEmpty ? availableTimes.first : null;
     }
-  }  Future<void> _searchSchedules() async {
+  }
+
+  Future<void> _searchSchedules() async {
     if (!_passengerTypeEnabled || _selectedTimeString == null) return;
     if (_selectedCategory == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Silakan pilih golongan'))
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Silakan pilih golongan')));
       return;
     }
 
@@ -307,15 +324,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Get vehicle info for the selected category
       final vehicleInfo = VehicleInfo.categories[_selectedCategory]!;
-      
+
       // Calculate price based on vehicle category and service type
-      double basePrice = _selectedServiceType == 'Regular' ? 
-          vehicleInfo.basePrice : 
-          vehicleInfo.basePrice * 1.5;
-          
-      if (_selectedCategory == VehicleCategory.none) {      // For pedestrians, calculate total price based on passenger counts
-        basePrice = (passengerCounts[PassengerType.adult] ?? 0) * basePrice +
-                   (passengerCounts[PassengerType.child] ?? 0) * (basePrice * 2/3);
+      double basePrice =
+          _selectedServiceType == 'Regular'
+              ? vehicleInfo.basePrice
+              : vehicleInfo.basePrice * 1.5;
+
+      if (_selectedCategory == VehicleCategory.none) {
+        // For pedestrians, calculate total price based on passenger counts
+        basePrice =
+            (passengerCounts[PassengerType.adult] ?? 0) * basePrice +
+            (passengerCounts[PassengerType.child] ?? 0) * (basePrice * 2 / 3);
       }
 
       final ticket = Ticket(
@@ -327,7 +347,10 @@ class _HomeScreenState extends State<HomeScreen> {
           "${DateFormat('yyyy-MM-dd').format(_selectedDate)} ${_selectedTimeString!}:00",
         ),
         price: basePrice,
-        shipName: _selectedServiceType == 'Regular' ? "KMP Gajah Mada" : "KMP Jatra III",
+        shipName:
+            _selectedServiceType == 'Regular'
+                ? "KMP Gajah Mada"
+                : "KMP Jatra III",
         ticketClass: _selectedServiceType,
         status: "Aktif",
         passengerCounts: passengerCounts,
@@ -339,23 +362,24 @@ class _HomeScreenState extends State<HomeScreen> {
       // Tampilkan popup konfirmasi tiket
       showDialog(
         context: context,
-        builder: (context) => TicketPopup(
-          ticket: ticket,
-          onContinue: () {
-            Navigator.pop(context); // Tutup dialog
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => FormDataScreen(ticket: ticket),
-              ),
-            );
-          },
-        ),
+        builder:
+            (context) => TicketPopup(
+              ticket: ticket,
+              onContinue: () {
+                Navigator.pop(context); // Tutup dialog
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FormDataScreen(ticket: ticket),
+                  ),
+                );
+              },
+            ),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Terjadi kesalahan: $e'))
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Terjadi kesalahan: $e')));
     } finally {
       if (mounted) {
         setState(() => _isSearching = false);
@@ -371,18 +395,6 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
     return const SizedBox.shrink();
-  }
-
-  Widget _buildContent() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      controller: _scrollController,
-      children: [
-        if (_currentPosition != null) WeatherCard(isNearMerak: _isNearMerak),
-        const SizedBox(height: 16),
-        // ...rest of your existing content...
-      ],
-    );
   }
 
   @override
@@ -404,10 +416,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             Text(
               _isNearMerak ? 'Pelabuhan Merak' : 'Pelabuhan Bakauheni',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-              ),
+              style: const TextStyle(color: Colors.white, fontSize: 14),
             ),
           ],
         ),
@@ -419,139 +428,142 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: !_isInitialized
-          ? const Center(child: CircularProgressIndicator())
-          : SafeArea(
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [                      Column(
-                        children: [
-                          WeatherCard(isNearMerak: _isNearMerak),
-                          const SizedBox(height: 8),
-                          _buildLocationInfo(), // Menampilkan info lokasi
-                        ],
-                      ),
-                      const TripTypeSelector(),
-                      Card(
-                        margin: const EdgeInsets.all(16),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              PortSelector(
-                                fromController: _fromController,
-                                toController: _toController,
-                                onSwapPorts: _swapPorts,
-                              ),
-                              const SizedBox(height: 16),                              PassengerSelector(
-                                passengerCounts: _passengerCounts,
-                                onCountChanged: (type, count) {
-                                  setState(() {
-                                    _passengerCounts[type] = count;
-                                  });
-                                },
-                              ),
-                              const SizedBox(height: 16),
-                              ServiceSelector(
-                                serviceTypes: _serviceTypes,
-                                selectedServiceType: _selectedServiceType,
-                                onServiceTypeChanged: (value) {
-                                  setState(() {
-                                    _selectedServiceType = value!;
-                                    _updateAvailableTime();
-                                    _updateFormState();
-                                  });
-                                },
-                                enabled: _serviceTypeEnabled,
-                              ),
-                              const SizedBox(height: 16),
-                              VehicleCategorySelector(
-                                selectedCategory: _selectedCategory,
-                                onCategoryChanged: (category) {
-                                  setState(() {
-                                    _selectedCategory = category;
-                                  });
-                                },
-                                serviceType: _selectedServiceType,
-                              ),
-                              const SizedBox(height: 16),
-                              DateTimeSelector(
-                                selectedDate: _selectedDate,
-                                selectedTimeString: _selectedTimeString,
-                                availableTimes:
-                                    TimeUtils.getAvailableTimesForDate(
-                                      _selectedDate,
-                                      _selectedServiceType,
-                                    ),
-                                onDateChanged: (date) {
-                                  setState(() {
-                                    _selectedDate = date;
-                                    _updateAvailableTime();
-                                    _updateFormState();
-                                  });
-                                },
-                                onTimeChanged: (value) {
-                                  setState(() {
-                                    _selectedTimeString = value;
-                                    _updateFormState();
-                                  });
-                                },
-                              ),
-                              const SizedBox(height: 24),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed:
-                                      _passengerTypeEnabled &&
-                                              _selectedTimeString != null &&
-                                              !_isSearching &&
-                                              _totalPassengers > 0
-                                          ? _searchSchedules
-                                          : null,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: sapphire,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    disabledBackgroundColor:
-                                        Colors.grey.shade300,
-                                  ),
-                                  child:
-                                      _isSearching
-                                          ? const SizedBox(
-                                            height: 20,
-                                            width: 20,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              valueColor:
-                                                  AlwaysStoppedAnimation<
-                                                    Color
-                                                  >(Colors.white),
-                                            ),
-                                          )
-                                          : const Text(
-                                            'Lanjutkan Pembayaran',
-                                          ),
+      body:
+          !_isInitialized
+              ? const Center(child: CircularProgressIndicator())
+              : SafeArea(
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Column(
+                          children: [
+                            WeatherCard(isNearMerak: _isNearMerak),
+                            const SizedBox(height: 8),
+                            _buildLocationInfo(), // Menampilkan info lokasi
+                          ],
+                        ),
+                        const TripTypeSelector(),
+                        Card(
+                          margin: const EdgeInsets.all(16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                PortSelector(
+                                  fromController: _fromController,
+                                  toController: _toController,
+                                  onSwapPorts: _swapPorts,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 16),
+                                PassengerSelector(
+                                  passengerCounts: _passengerCounts,
+                                  onCountChanged: (type, count) {
+                                    setState(() {
+                                      _passengerCounts[type] = count;
+                                    });
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                                ServiceSelector(
+                                  serviceTypes: _serviceTypes,
+                                  selectedServiceType: _selectedServiceType,
+                                  onServiceTypeChanged: (value) {
+                                    setState(() {
+                                      _selectedServiceType = value!;
+                                      _updateAvailableTime();
+                                      _updateFormState();
+                                    });
+                                  },
+                                  enabled: _serviceTypeEnabled,
+                                ),
+                                const SizedBox(height: 16),
+                                VehicleCategorySelector(
+                                  selectedCategory: _selectedCategory,
+                                  onCategoryChanged: (category) {
+                                    setState(() {
+                                      _selectedCategory = category;
+                                    });
+                                  },
+                                  serviceType: _selectedServiceType,
+                                ),
+                                const SizedBox(height: 16),
+                                DateTimeSelector(
+                                  selectedDate: _selectedDate,
+                                  selectedTimeString: _selectedTimeString,
+                                  availableTimes:
+                                      TimeUtils.getAvailableTimesForDate(
+                                        _selectedDate,
+                                        _selectedServiceType,
+                                      ),
+                                  onDateChanged: (date) {
+                                    setState(() {
+                                      _selectedDate = date;
+                                      _updateAvailableTime();
+                                      _updateFormState();
+                                    });
+                                  },
+                                  onTimeChanged: (value) {
+                                    setState(() {
+                                      _selectedTimeString = value;
+                                      _updateFormState();
+                                    });
+                                  },
+                                ),
+                                const SizedBox(height: 24),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed:
+                                        _passengerTypeEnabled &&
+                                                _selectedTimeString != null &&
+                                                !_isSearching &&
+                                                _totalPassengers > 0
+                                            ? _searchSchedules
+                                            : null,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: sapphire,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      disabledBackgroundColor:
+                                          Colors.grey.shade300,
+                                    ),
+                                    child:
+                                        _isSearching
+                                            ? const SizedBox(
+                                              height: 20,
+                                              width: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                      Color
+                                                    >(Colors.blue),
+                                              ),
+                                            )
+                                            : const Text(
+                                              'Lanjutkan Pembayaran',
+                                            ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
     );
   }
 }

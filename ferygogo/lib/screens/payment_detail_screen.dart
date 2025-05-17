@@ -5,7 +5,6 @@ import '../../models/ticket.dart';
 import '../../models/passenger.dart';
 import '../../models/vehicle_category.dart';
 
-
 class PaymentDetailScreen extends StatefulWidget {
   final Ticket ticket;
 
@@ -20,7 +19,9 @@ class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
+      backgroundColor: isDarkMode ? const Color(0xFF121212) : Colors.white,
       appBar: AppBar(
         title: const Text('Detail Pembayaran'),
         backgroundColor: const Color(0xFF0F52BA),
@@ -363,13 +364,14 @@ class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
   }
 
   Widget _buildBottomBar() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.3),
+            color: isDarkMode ? Colors.black26 : Colors.grey.withOpacity(0.3),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, -3),

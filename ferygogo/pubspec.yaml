@@ -39,7 +39,7 @@ dev_dependencies:
 flutter_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/fery.jpg"
+  image_path: "assets/icon/fery.png"
   min_sdk_android: 21
   
 flutter:  
@@ -48,7 +48,7 @@ flutter:
     - assets/boat.png
     - assets/waves.png
     - assets/ferygogo.png
-    - assets/fery.jpg
+    - assets/icon/fery.png
   
   fonts:
     - family: Poppins
