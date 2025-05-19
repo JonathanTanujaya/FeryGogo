@@ -7,19 +7,19 @@ import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
-import 'providers/booking_provider.dart';
 import 'providers/history_provider.dart';
 import 'providers/profile_provider.dart';
 import 'providers/schedule_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/weather_provider.dart';
 import 'providers/navigation_provider.dart';
+import 'providers/information_provider.dart';
 
 import 'screens/splash/splashUI.dart';
 import 'screens/Login/login_screen.dart';
 import 'screens/SignUp/signup_screen.dart';
 import 'screens/Home/home_screen.dart';
-import 'screens/booking_screen.dart';
+import 'screens/information_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'utils/auth_guard.dart';
@@ -70,13 +70,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(
+      providers: [        ChangeNotifierProvider(
           create: (_) => AuthProvider(),
           lazy: false, // Initialize immediately
         ),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
-        ChangeNotifierProvider(create: (_) => BookingProvider()),
+        ChangeNotifierProvider(create: (_) => InformationProvider()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
         ChangeNotifierProvider(create: (_) => WeatherProvider()),
         ChangeNotifierProvider(create: (_) => ScheduleProvider()),
@@ -129,10 +128,9 @@ class MainLayout extends StatefulWidget {
   State<MainLayout> createState() => _MainLayoutState();
 }
 
-class _MainLayoutState extends State<MainLayout> with AutomaticKeepAliveClientMixin {
-  final List<Widget> _screens = [
+class _MainLayoutState extends State<MainLayout> with AutomaticKeepAliveClientMixin {  final List<Widget> _screens = [
     const HomeScreen(),
-    const BookingScreen(),
+    const InformationScreen(),
     const HistoryScreen(),
     const ProfileScreen(),
   ];
@@ -188,10 +186,9 @@ class _MainLayoutState extends State<MainLayout> with AutomaticKeepAliveClientMi
               selectedItemColor: const Color(0xFF0F52BA),
               unselectedItemColor: Colors.grey,
               type: BottomNavigationBarType.fixed,
-              elevation: 8,
-              items: const [
+              elevation: 8,              items: const [
                 BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
-                BottomNavigationBarItem(icon: Icon(Icons.qr_code), label: 'Pesan'),
+                BottomNavigationBarItem(icon: Icon(Icons.info_outline), label: 'Informasi'),
                 BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Riwayat'),
                 BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Akun'),
               ],
