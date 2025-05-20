@@ -414,7 +414,19 @@ class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
       // Simulate payment processing
       await Future.delayed(const Duration(seconds: 2));
 
+      // Save ticket to Firestore after payment
+      await widget.ticket.saveToFirestore();
+
       if (!mounted) return;
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pembayaran berhasil! Tiket tersimpan dalam riwayat.'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
+      );
 
       // Navigate to e-ticket screen
       Navigator.pushReplacement(

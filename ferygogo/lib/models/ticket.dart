@@ -1,7 +1,7 @@
 import 'passenger.dart';
 import 'vehicle_category.dart';
-import 'ship.dart';
 import '../services/ship_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Ticket {
   final String id;
@@ -50,6 +50,16 @@ class Ticket {
     } else {
       throw Exception('No active ship found for type: $type');
     }
+  }
+
+  Future<void> saveToFirestore() async {
+    final docRef = FirebaseFirestore.instance.collection('tiket').doc(id);
+    final data = toJson();
+    
+    // Add created timestamp for better sorting and tracking
+    data['createdAt'] = FieldValue.serverTimestamp();
+    
+    await docRef.set(data);
   }
 
   Map<String, dynamic> toJson() => {
