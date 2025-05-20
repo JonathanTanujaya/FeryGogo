@@ -9,32 +9,42 @@ class InformationProvider with ChangeNotifier {
   String? _error;
   InformationModel? _selectedInfo;
   InformationModel? _mainAnnouncement;
+  List<Map<String, dynamic>>? _subcollectionData;
 
   List<InformationModel> get information => _information;
   bool get isLoading => _isLoading;
   String? get error => _error;
   InformationModel? get selectedInfo => _selectedInfo;
   InformationModel? get mainAnnouncement => _mainAnnouncement;
+  List<Map<String, dynamic>>? get subcollectionData => _subcollectionData;
+
   Future<void> fetchInformation() async {
     _isLoading = true;
     _error = null;
-    notifyListeners();
-
+    notifyListeners();    
     try {
-      final snapshot = await _firestore
-          .collection('information')
-          .orderBy('publishDate', descending: true)
-          .get();      _information.clear();
+      // Daftar ID yang ingin diambil
+      final List<String> documentIds = ['N001', 'N002', 'N003', 'N004'];
+      _information.clear();
 
-      for (var doc in snapshot.docs) {
-        final data = doc.data();
-        final info = InformationModel.fromMap(data, doc.id);
-        
-        // Store main announcement separately
-        if (doc.id == '1Z0A0MphzFKGdOoPdhUX') {
-          _mainAnnouncement = info;
-        } else {
+      // Ambil dokumen satu per satu berdasarkan ID
+      for (String id in documentIds) {
+        final docSnapshot = await _firestore
+            .collection('information')
+            .doc(id)
+            .get();
+
+        if (docSnapshot.exists) {
+          final data = docSnapshot.data()!;
+          final info = InformationModel.fromMap(data, docSnapshot.id);
           _information.add(info);
+          
+          // Jika ini pengumuman utama
+          if (id == '1Z0A0MphzFKGdOoPdhUX') {
+            _mainAnnouncement = info;
+          }
+        } else {
+          print('Document $id does not exist');
         }
       }
 
@@ -55,6 +65,7 @@ class InformationProvider with ChangeNotifier {
   Future<void> refreshInformation() async {
     await fetchInformation();
   }
+
   Future<void> fetchSpecificInformation(String id) async {
     try {
       final docSnapshot = await _firestore
@@ -70,6 +81,35 @@ class InformationProvider with ChangeNotifier {
           _mainAnnouncement = info;
         }
         _selectedInfo = info;
+
+        // Fetch subcollection data based on document ID
+        if (id == 'N004') {
+          final subcollectionSnapshot = await _firestore
+              .collection('information')
+              .doc(id)
+              .collection('IN004')
+              .get();
+
+          _subcollectionData = subcollectionSnapshot.docs
+              .map((doc) => doc.data())
+              .toList();
+        } else if (id == 'N001') {
+          final subcollectionSnapshot = await _firestore
+              .collection('information')
+              .doc(id)
+              .collection('isi')
+              .doc('IN001')
+              .get();
+
+          if (subcollectionSnapshot.exists) {
+            _subcollectionData = [subcollectionSnapshot.data()!];
+          } else {
+            _subcollectionData = null;
+          }
+        } else {
+          _subcollectionData = null;
+        }
+        
         notifyListeners();
       }
     } catch (e) {
