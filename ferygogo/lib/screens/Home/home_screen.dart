@@ -347,15 +347,16 @@ class _HomeScreenState extends State<HomeScreen> {
           "${DateFormat('yyyy-MM-dd').format(_selectedDate)} ${_selectedTimeString!}:00",
         ),
         price: basePrice,
-        shipName:
-            _selectedServiceType == 'Regular'
-                ? "KMP Gajah Mada"
-                : "KMP Jatra III",
+        shipName: null, // Ship name will be assigned from Firebase
         ticketClass: _selectedServiceType,
         status: "Aktif",
         passengerCounts: passengerCounts,
         vehicleCategory: _selectedCategory,
       );
+
+      // Assign ship name from Firebase based on service type
+      String shipType = _selectedServiceType.toLowerCase() == 'regular' ? 'reguler' : 'express';
+      await ticket.assignShipNameByType(shipType);
 
       if (!mounted) return;
 

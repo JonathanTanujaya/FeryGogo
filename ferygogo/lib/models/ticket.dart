@@ -1,5 +1,7 @@
 import 'passenger.dart';
 import 'vehicle_category.dart';
+import 'ship.dart';
+import '../services/ship_service.dart';
 
 class Ticket {
   final String id;
@@ -8,15 +10,17 @@ class Ticket {
   final String arrivalPort;
   final DateTime departureTime;
   final double price;
-  final String shipName;
+  String? shipName; // now nullable, will be set after fetching from backend
   final String ticketClass;
-  final String status;  final Map<PassengerType, int> passengerCounts;
+  final String status;
+  final Map<PassengerType, int> passengerCounts;
   final List<Passenger> passengers;
   final String bookerName;
   final String bookerPhone;
   final String bookerEmail;
   final VehicleCategory? vehicleCategory;
   final String? vehiclePlateNumber;
+
   Ticket({
     required this.id,
     required this.routeName,
@@ -24,16 +28,29 @@ class Ticket {
     required this.arrivalPort,
     required this.departureTime,
     required this.price,
-    required this.shipName,
+    this.shipName,
     required this.ticketClass,
     required this.status,
     this.passengerCounts = const {},
     this.passengers = const [],
     this.bookerName = '',
     this.bookerPhone = '',
-    this.bookerEmail = '',    this.vehicleCategory,
+    this.bookerEmail = '',
+    this.vehicleCategory,
     this.vehiclePlateNumber,
   });
+
+  Future<void> assignShipNameByType(String type) async {
+    // type: 'reguler' atau 'express'
+    // This method should be called after creating the Ticket object
+    final shipService = ShipService();
+    final ship = await shipService.getRandomActiveShipByType(type);
+    if (ship != null) {
+      shipName = ship.name;
+    } else {
+      throw Exception('No active ship found for type: $type');
+    }
+  }
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -55,41 +72,4 @@ class Ticket {
   };
 
   // Dummy data generator
-  static List<Ticket> getDummyTickets() {
-    return [
-      Ticket(
-        id: "T001",
-        routeName: "Ketapang - Gilimanuk",
-        departurePort: "Pelabuhan Ketapang",
-        arrivalPort: "Pelabuhan Gilimanuk",
-        departureTime: DateTime.now().add(const Duration(days: 1)),
-        price: 150000,
-        shipName: "KMP Gajah Mada",
-        ticketClass: "Ekonomi",
-        status: "Aktif",
-      ),
-      Ticket(
-        id: "T002",
-        routeName: "Merak - Bakauheni",
-        departurePort: "Pelabuhan Merak",
-        arrivalPort: "Pelabuhan Bakauheni",
-        departureTime: DateTime.now().add(const Duration(days: 2)),
-        price: 200000,
-        shipName: "KMP Jatra III",
-        ticketClass: "Bisnis",
-        status: "Aktif",
-      ),
-      Ticket(
-        id: "T003",
-        routeName: "Ketapang - Gilimanuk",
-        departurePort: "Pelabuhan Ketapang",
-        arrivalPort: "Pelabuhan Gilimanuk",
-        departureTime: DateTime.now().add(const Duration(days: 3)),
-        price: 175000,
-        shipName: "KMP Dharma Rucitra",
-        ticketClass: "Eksekutif",
-        status: "Aktif",
-      ),
-    ];
-  }
 }

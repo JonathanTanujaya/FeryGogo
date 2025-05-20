@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 class WeatherInfo {
   final String cityName;
   final double temperature;

@@ -46,7 +46,7 @@ class TicketDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    ticket.shipName,
+                    (ticket.shipName == null || ticket.shipName!.trim().isEmpty) ? 'Tidak ada kapal aktif' : ticket.shipName!,
                     style: const TextStyle(
                       fontSize: 18,
                       color: Colors.white70,

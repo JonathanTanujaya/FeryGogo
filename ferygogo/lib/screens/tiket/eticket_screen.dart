@@ -76,7 +76,7 @@ class ETicketScreen extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      ticket.shipName,
+                      ticket.shipName ?? '-',
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 14,
@@ -156,6 +156,7 @@ class ETicketScreen extends StatelessWidget {
           const SizedBox(height: 16),
           _buildDetailRow('Pelabuhan Keberangkatan', ticket.departurePort),
           _buildDetailRow('Pelabuhan Tujuan', ticket.arrivalPort),
+          _buildDetailRow('Nama Kapal', (ticket.shipName == null || ticket.shipName!.trim().isEmpty) ? 'Tidak ada kapal aktif' : ticket.shipName!),
           _buildDetailRow(
             'Waktu Keberangkatan',
             DateFormat('dd MMMM yyyy, HH:mm').format(ticket.departureTime),
