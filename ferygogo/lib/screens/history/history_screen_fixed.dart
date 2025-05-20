@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import '../services/error_handler.dart';
+import '../../services/error_handler.dart';
 import 'history_detail_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -45,10 +45,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Future<void> _loadTickets() async {
     if (_isLoading) return;
+    
     setState(() {
       _isLoading = true;
       _error = null;
     });
+
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
@@ -58,31 +60,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
         });
         return;
       }
-      print('DEBUG: user.email = \'${user.email}\'');
-      // Query tickets from Firestore - filter by email
+
+      // Query tickets from Firestore - without complex filters that require composite index
       final query = FirebaseFirestore.instance
           .collection('tiket')
           .where('bookerEmail', isEqualTo: user.email)
           .limit(_pageSize);
+
       final snapshot = await query.get();
-      print('DEBUG: tiket ditemukan = \'${snapshot.docs.length}\'');
-      List<QueryDocumentSnapshot> docsToShow = snapshot.docs;
-      if (snapshot.docs.isEmpty) {
-        // Fallback: ambil semua tiket tanpa filter agar user bisa lihat data
-        final allSnapshot = await FirebaseFirestore.instance.collection('tiket').get();
-        print('DEBUG: tiket total di firestore = \'${allSnapshot.docs.length}\'');
-        if (allSnapshot.docs.isNotEmpty) {
-          print('DEBUG: Contoh tiket: ' + allSnapshot.docs.first.data().toString());
-        }
-        docsToShow = allSnapshot.docs;
-      }
+      
       // Sort tickets manually by departure time
-      final sorted = docsToShow.toList()
+      final sorted = snapshot.docs.toList()
         ..sort((a, b) {
-          final dateA = DateTime.tryParse((a.data() as Map)['departureTime']?.toString() ?? '') ?? DateTime(2000);
-          final dateB = DateTime.tryParse((b.data() as Map)['departureTime']?.toString() ?? '') ?? DateTime(2000);
+          final dateA = DateTime.parse((a.data() as Map)['departureTime'] as String);
+          final dateB = DateTime.parse((b.data() as Map)['departureTime'] as String);
           return dateB.compareTo(dateA); // descending order
         });
+      
       setState(() {
         _tickets = sorted;
         _isLoading = false;
@@ -116,36 +110,37 @@ class _HistoryScreenState extends State<HistoryScreen> {
         });
         return;
       }
-      // Query more tickets (simplify to avoid index issues)
-      final query = FirebaseFirestore.instance
+
+      // Get all tickets and filter manually instead of using startAfter
+      final moreTicketsQuery = FirebaseFirestore.instance
           .collection('tiket')
           .where('bookerEmail', isEqualTo: user.email)
-          .limit(_pageSize * 2); // Get more records to filter out duplicates
-      final snapshot = await query.get(); // <-- tambahkan baris ini
+          .limit(_pageSize * 2); // Get more to filter later
+          
+      final snapshot = await moreTicketsQuery.get();
 
-      // Sort and filter new tickets
+      // Sort all tickets
       final allDocs = snapshot.docs.toList()
         ..sort((a, b) {
           final dateA = DateTime.parse((a.data() as Map)['departureTime'] as String);
           final dateB = DateTime.parse((b.data() as Map)['departureTime'] as String);
-          return dateB.compareTo(dateA); // descending order
+          return dateB.compareTo(dateA);
         });
         
-      // Get only tickets that aren't already loaded (by checking IDs)
+      // Filter out tickets we already have
       final existingIds = _tickets.map((doc) => (doc.data() as Map)['id']).toSet();
       final newDocs = allDocs.where((doc) => 
           !existingIds.contains((doc.data() as Map)['id'])).toList();
       
-      if (newDocs.length > _pageSize) {
-        newDocs.length = _pageSize; // Limit to page size
-      }
+      // Limit to page size
+      final docsToAdd = newDocs.take(_pageSize).toList();
       
       setState(() {
-        _tickets.addAll(newDocs);
+        _tickets.addAll(docsToAdd);
         _isLoading = false;
-        if (newDocs.isNotEmpty) {
-          _lastDocument = newDocs.last;
-          _hasMore = newDocs.length >= _pageSize;
+        if (docsToAdd.isNotEmpty) {
+          _lastDocument = docsToAdd.last;
+          _hasMore = docsToAdd.length >= _pageSize;
         } else {
           _hasMore = false;
         }

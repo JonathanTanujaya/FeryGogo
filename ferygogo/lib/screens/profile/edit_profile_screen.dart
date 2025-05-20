@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'dart:convert';
+import 'package:image_cropper/image_cropper.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final UserProfile profile;
@@ -88,10 +89,29 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _pickImage(ImageSource source) async {
     final pickedFile = await _picker.pickImage(source: source);
     if (pickedFile != null) {
-      setState(() {
-        _image = File(pickedFile.path);
-      });
-      await _compressAndEncodeImage();
+      // Crop image to circle (image_cropper v2.x-5.x.x)
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: pickedFile.path,
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Potong Gambar',
+            toolbarColor: const Color(0xFF0F52BA),
+            toolbarWidgetColor: Colors.white,
+            hideBottomControls: true,
+          ),
+          IOSUiSettings(
+            title: 'Potong Gambar',
+            aspectRatioLockEnabled: true,
+          ),
+        ],
+      );
+      if (croppedFile != null) {
+        setState(() {
+          _image = File(croppedFile.path);
+        });
+        await _compressAndEncodeImage();
+      }
     }
   }
 
@@ -199,26 +219,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   child: Container(
                     width: 120,
                     height: 120,
-                    decoration: BoxDecoration(
+                    clipBehavior: Clip.hardEdge,
+                    decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.grey[200],
-                      image: _image != null
-                          ? DecorationImage(
-                              image: FileImage(_image!),
-                              fit: BoxFit.cover,
-                            )
-                          : _base64Image != null
-                              ? DecorationImage(
-                                  image: MemoryImage(
-                                      base64Decode(_base64Image!)),
-                                  fit: BoxFit.cover,
-                                )
-                              : null,
+                      color: Colors.transparent,
                     ),
-                    child: _image == null && _base64Image == null
-                        ? const Icon(Icons.camera_alt,
-                            size: 40, color: Colors.grey)
-                        : null,
+                    child: _image != null
+                        ? Image.file(_image!, fit: BoxFit.cover, width: 120, height: 120)
+                        : _base64Image != null
+                            ? Image.memory(base64Decode(_base64Image!), fit: BoxFit.cover, width: 120, height: 120)
+                            : const Icon(Icons.camera_alt, size: 40, color: Colors.grey),
                   ),
                 ),
               ),

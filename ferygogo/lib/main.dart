@@ -20,7 +20,7 @@ import 'screens/Login/login_screen.dart';
 import 'screens/SignUp/signup_screen.dart';
 import 'screens/Home/home_screen.dart';
 import 'screens/information_screen.dart';
-import 'screens/history_screen.dart';
+import 'screens/history/history_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'utils/auth_guard.dart';
 import 'theme.dart';

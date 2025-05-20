@@ -4,6 +4,7 @@ import '../../models/user_profile.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/theme_provider.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
 import 'profile_logic.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -104,32 +105,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           child: profile != null ? SafeArea(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SizedBox(height: 32),
-                _buildProfileImage(profile),
-                const SizedBox(height: 8),
-                Text(
-                  profile.name.isNotEmpty ? profile.name : 'Belum diatur',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (profile.email.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      profile.email,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
+            child: Center(
+              child: SingleChildScrollView(
+                physics: const NeverScrollableScrollPhysics(),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 16),
+                    _buildProfileImage(profile),
+                    const SizedBox(height: 8),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        profile.name.isNotEmpty ? profile.name : 'Belum diatur',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                  ),
-              ],
+                    if (profile.email.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            profile.email,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ) : null,
         ),
@@ -294,49 +306,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildProfileImage(UserProfile profile) {
     return GestureDetector(
       onTap: _logic.pickAndUploadImage,
-      child: Stack(
-        children: [
-          Hero(
-            tag: 'profile-image',
-            child: CircleAvatar(
-              radius: 50,
-              backgroundColor: Colors.white,
-              child: CircleAvatar(
-                radius: 48,
-                backgroundImage: profile.profilePicture.isNotEmpty
-                    ? NetworkImage(profile.profilePicture)
-                    : null,
-                child: profile.profilePicture.isEmpty
-                    ? profile.name.isNotEmpty
-                        ? Text(
-                            profile.name[0].toUpperCase(),
-                            style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
-                          )
-                        : const Icon(Icons.person, size: 48)
-                    : null,
-              ),
-            ),
-          ),
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Icon(Icons.camera_alt, color: primaryColor, size: 20),
-            ),
-          ),
-        ],
+      child: CircleAvatar(
+        radius: 60,
+        backgroundColor: Colors.grey[200],
+        backgroundImage: (profile.imageBase64 != null && profile.imageBase64!.isNotEmpty)
+            ? MemoryImage(base64Decode(profile.imageBase64!))
+            : null,
+        child: (profile.imageBase64 == null || profile.imageBase64!.isEmpty)
+            ? const Icon(Icons.account_circle, size: 80, color: Colors.grey)
+            : null,
       ),
     );
   }

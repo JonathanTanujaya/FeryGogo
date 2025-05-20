@@ -31,6 +31,7 @@ dependencies:
   geolocator: ^14.0.0
   flutter_launcher_icons: ^0.14.3
   weather_icons: ^3.0.0
+  image_cropper: ^9.1.0
 
 dev_dependencies:
   flutter_test:

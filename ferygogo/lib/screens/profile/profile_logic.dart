@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
+import 'dart:convert';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import '../../models/user_profile.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -24,29 +25,26 @@ class ProfileScreenLogic {
     await context.read<ProfileProvider>().loadUserProfile();
   }
 
+  // Hanya ambil gambar, kompres, encode base64, dan update ke Firestore
   Future<void> pickAndUploadImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
     if (pickedFile != null && mounted) {
       final file = File(pickedFile.path);
-      final fileName = 'profile_pictures/${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-      try {
-        final ref = FirebaseStorage.instance.ref().child(fileName);
-        await ref.putFile(file);
-        final imageUrl = await ref.getDownloadURL();
-        
-        if (mounted) {
-          await context.read<ProfileProvider>().updateProfilePicture(imageUrl);
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Gagal mengunggah gambar: $e')),
-          );
-        }
-      }
+      // Kompres gambar
+      final compressedImage = await FlutterImageCompress.compressWithFile(
+        file.path,
+        quality: 50,
+      );
+      if (compressedImage == null) return;
+      final base64Image = base64Encode(compressedImage);
+      // Update profile dengan base64Image
+      await context.read<ProfileProvider>().updateProfile(
+        imageBase64: base64Image,
+        // ...tambahkan field lain jika perlu
+      );
+      // Setelah update, refresh profile
+      await context.read<ProfileProvider>().loadUserProfile();
     }
   }
 
