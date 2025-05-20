@@ -1,3 +1,4 @@
+import 'package:ferry_ticket_app/screens/tiket/payment_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';

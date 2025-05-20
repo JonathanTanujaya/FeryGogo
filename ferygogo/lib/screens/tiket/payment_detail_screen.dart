@@ -1,9 +1,9 @@
+import 'package:ferry_ticket_app/screens/tiket/eticket_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../models/ticket.dart';
-import '../../models/passenger.dart';
-import '../../models/vehicle_category.dart';
-import 'eticket_screen.dart';
+import '../../../models/ticket.dart';
+import '../../../models/passenger.dart';
+import '../../../models/vehicle_category.dart';
 
 class PaymentDetailScreen extends StatefulWidget {
   final Ticket ticket;
@@ -19,7 +19,9 @@ class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
+      backgroundColor: isDarkMode ? const Color(0xFF121212) : Colors.white,
       appBar: AppBar(
         title: const Text('Detail Pembayaran'),
         backgroundColor: const Color(0xFF0F52BA),
@@ -362,13 +364,14 @@ class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
   }
 
   Widget _buildBottomBar() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.3),
+            color: isDarkMode ? Colors.black26 : Colors.grey.withOpacity(0.3),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, -3),
@@ -414,19 +417,7 @@ class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
       // Simulate payment processing
       await Future.delayed(const Duration(seconds: 2));
 
-      // Save ticket to Firestore after payment
-      await widget.ticket.saveToFirestore();
-
       if (!mounted) return;
-
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pembayaran berhasil! Tiket tersimpan dalam riwayat.'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 3),
-        ),
-      );
 
       // Navigate to e-ticket screen
       Navigator.pushReplacement(

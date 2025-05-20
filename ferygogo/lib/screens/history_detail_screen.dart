@@ -1,9 +1,9 @@
-import 'package:ferry_ticket_app/models/passenger.dart';
-import 'package:ferry_ticket_app/models/ticket.dart';
-import 'package:ferry_ticket_app/models/vehicle_category.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/ticket.dart';
+import '../models/passenger.dart';
+import '../models/vehicle_category.dart';
 
 class HistoryDetailScreen extends StatefulWidget {
   final String ticketId;
