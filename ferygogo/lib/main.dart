@@ -7,23 +7,22 @@ import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
+import 'providers/booking_provider.dart';
 import 'providers/history_provider.dart';
 import 'providers/profile_provider.dart';
 import 'providers/schedule_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/weather_provider.dart';
 import 'providers/navigation_provider.dart';
-import 'providers/information_provider.dart';
 
 import 'screens/splash/splashUI.dart';
 import 'screens/Login/login_screen.dart';
 import 'screens/SignUp/signup_screen.dart';
 import 'screens/Home/home_screen.dart';
-import 'screens/information_screen.dart';
-import 'screens/history/history_screen.dart';
+import 'screens/booking_screen.dart';
+import 'screens/history_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'utils/auth_guard.dart';
-import 'theme.dart';
 
 // Konstanta untuk mode debug.
 const bool isDebugMode = true; // Set ke false untuk production
@@ -70,12 +69,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [        ChangeNotifierProvider(
+      providers: [
+        ChangeNotifierProvider(
           create: (_) => AuthProvider(),
           lazy: false, // Initialize immediately
         ),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
-        ChangeNotifierProvider(create: (_) => InformationProvider()),
+        ChangeNotifierProvider(create: (_) => BookingProvider()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
         ChangeNotifierProvider(create: (_) => WeatherProvider()),
         ChangeNotifierProvider(create: (_) => ScheduleProvider()),
@@ -88,8 +88,115 @@ class MyApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             title: 'FeryGogo',
             themeMode: themeProvider.themeMode,
-            theme: lightTheme,
-            darkTheme: darkTheme,
+            theme: ThemeData(
+              primarySwatch: Colors.blue,
+              fontFamily: 'Poppins',
+              useMaterial3: true,
+              brightness: Brightness.light,
+              scaffoldBackgroundColor: Colors.white,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color(0xFF0F52BA),
+                primary: const Color(0xFF0F52BA),
+                onPrimary: Colors.white,
+                secondary: const Color(0xFF3B7DE9),
+                onSecondary: Colors.white,
+                surface: Colors.white,
+                onSurface: Colors.black87,
+                background: Colors.grey[50]!,
+                onBackground: Colors.black87,
+              ),
+              cardTheme: const CardTheme(
+                color: Colors.white,
+                shadowColor: Colors.black12,
+                elevation: 2,
+              ),
+              inputDecorationTheme: InputDecorationTheme(
+                filled: true,
+                fillColor: Colors.grey[50],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF0F52BA)),
+                ),
+                labelStyle: TextStyle(color: Colors.grey[700]),
+                hintStyle: TextStyle(color: Colors.grey[500]),
+              ),
+              textTheme: TextTheme(
+                bodyLarge: TextStyle(color: Colors.grey[900]),
+                bodyMedium: TextStyle(color: Colors.grey[800]),
+              ),
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Color(0xFF0F52BA),
+                foregroundColor: Colors.white,
+                elevation: 0,
+              ),
+            ),
+            darkTheme: ThemeData(
+              primarySwatch: Colors.blue,
+              fontFamily: 'Poppins',
+              useMaterial3: true,
+              brightness: Brightness.dark,
+              scaffoldBackgroundColor: const Color(0xFF121212),
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color(0xFF0F52BA),
+                brightness: Brightness.dark,
+                primary: const Color(0xFF0F52BA),
+                onPrimary: Colors.white,
+                secondary: const Color(0xFF3B7DE9),
+                onSecondary: Colors.white,
+                surface: const Color(0xFF1E1E1E),
+                onSurface: Colors.white,
+                background: const Color(0xFF121212),
+                onBackground: Colors.white,
+              ),
+              cardTheme: CardTheme(
+                color: const Color(0xFF1E1E1E),
+                shadowColor: Colors.black45,
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              inputDecorationTheme: InputDecorationTheme(
+                filled: true,
+                fillColor: Colors.white10,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.white24),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.white24),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF0F52BA)),
+                ),
+                labelStyle: const TextStyle(color: Colors.white70),
+                hintStyle: const TextStyle(color: Colors.white60),
+              ),
+              textTheme: const TextTheme(
+                bodyLarge: TextStyle(color: Colors.white),
+                bodyMedium: TextStyle(color: Colors.white70),
+              ),
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Color(0xFF0F52BA),
+                foregroundColor: Colors.white,
+                elevation: 0,
+              ),
+              bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+                backgroundColor: Color(0xFF1E1E1E),
+                selectedItemColor: Color(0xFF0F52BA),
+                unselectedItemColor: Colors.white54,
+              ),
+            ),
             home: const SplashScreen(),
             onGenerateRoute: (settings) {
               // Add logging for route navigation
@@ -128,9 +235,10 @@ class MainLayout extends StatefulWidget {
   State<MainLayout> createState() => _MainLayoutState();
 }
 
-class _MainLayoutState extends State<MainLayout> with AutomaticKeepAliveClientMixin {  final List<Widget> _screens = [
+class _MainLayoutState extends State<MainLayout> with AutomaticKeepAliveClientMixin {
+  final List<Widget> _screens = [
     const HomeScreen(),
-    const InformationScreen(),
+    const BookingScreen(),
     const HistoryScreen(),
     const ProfileScreen(),
   ];
@@ -186,9 +294,10 @@ class _MainLayoutState extends State<MainLayout> with AutomaticKeepAliveClientMi
               selectedItemColor: const Color(0xFF0F52BA),
               unselectedItemColor: Colors.grey,
               type: BottomNavigationBarType.fixed,
-              elevation: 8,              items: const [
+              elevation: 8,
+              items: const [
                 BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
-                BottomNavigationBarItem(icon: Icon(Icons.info_outline), label: 'Informasi'),
+                BottomNavigationBarItem(icon: Icon(Icons.qr_code), label: 'Pesan'),
                 BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Riwayat'),
                 BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Akun'),
               ],

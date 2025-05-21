@@ -57,25 +57,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
           _isLoading = false;
         });
         return;
-      }
-      print('DEBUG: user.email = \'${user.email}\'');
-      // Query tickets from Firestore - filter by email
+      }      print('DEBUG: user.email = \'${user.email}\' and uid = \'${user.uid}\'');
+      // Query tickets from Firestore dengan filter email dan uid
       final query = FirebaseFirestore.instance
           .collection('tiket')
           .where('bookerEmail', isEqualTo: user.email)
+          .where('userId', isEqualTo: user.uid) // Tambah filter berdasarkan uid
+          .orderBy('departureTime', descending: true) // Urutkan berdasarkan waktu keberangkatan
           .limit(_pageSize);
+      
       final snapshot = await query.get();
       print('DEBUG: tiket ditemukan = \'${snapshot.docs.length}\'');
       List<QueryDocumentSnapshot> docsToShow = snapshot.docs;
-      if (snapshot.docs.isEmpty) {
-        // Fallback: ambil semua tiket tanpa filter agar user bisa lihat data
-        final allSnapshot = await FirebaseFirestore.instance.collection('tiket').get();
-        print('DEBUG: tiket total di firestore = \'${allSnapshot.docs.length}\'');
-        if (allSnapshot.docs.isNotEmpty) {
-          print('DEBUG: Contoh tiket: ' + allSnapshot.docs.first.data().toString());
-        }
-        docsToShow = allSnapshot.docs;
-      }
       // Sort tickets manually by departure time
       final sorted = docsToShow.toList()
         ..sort((a, b) {
@@ -115,12 +108,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
           _isLoading = false;
         });
         return;
-      }
-      // Query more tickets (simplify to avoid index issues)
+      }      // Query more tickets dengan filter yang sama
       final query = FirebaseFirestore.instance
           .collection('tiket')
           .where('bookerEmail', isEqualTo: user.email)
-          .limit(_pageSize * 2); // Get more records to filter out duplicates
+          .where('userId', isEqualTo: user.uid)
+          .orderBy('departureTime', descending: true)
+          .startAfterDocument(_lastDocument!) // Mulai setelah dokumen terakhir
+          .limit(_pageSize); // Batasi jumlah data yang diambil
       final snapshot = await query.get(); // <-- tambahkan baris ini
 
       // Sort and filter new tickets
