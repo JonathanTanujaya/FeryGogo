@@ -1,6 +1,7 @@
 import 'package:ferry_ticket_app/screens/tiket/eticket_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../models/ticket.dart';
 import '../../../models/passenger.dart';
 import '../../../models/vehicle_category.dart';
@@ -233,6 +234,7 @@ class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
   }
 
   Widget _buildBookerInfo() {
+    final booker = widget.ticket.booker;
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -251,9 +253,9 @@ class _PaymentDetailScreenState extends State<PaymentDetailScreen> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  _buildInfoRow('Nama', widget.ticket.bookerName),
-                  _buildInfoRow('Telepon', widget.ticket.bookerPhone),
-                  _buildInfoRow('Email', widget.ticket.bookerEmail),
+                  _buildInfoRow('Nama', booker['name'] ?? '-'),
+                  _buildInfoRow('Telepon', booker['phone'] ?? '-'),
+                  _buildInfoRow('Email', booker['email'] ?? '-'),
                 ],
               ),
             ),

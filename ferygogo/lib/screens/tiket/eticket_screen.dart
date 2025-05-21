@@ -313,9 +313,9 @@ class ETicketScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  _buildDetailRow('Nama', ticket.bookerName),
-                  _buildDetailRow('Telepon', ticket.bookerPhone),
-                  _buildDetailRow('Email', ticket.bookerEmail),
+                  _buildDetailRow('Nama', ticket.booker['name'] ?? '-'),
+                  _buildDetailRow('Telepon', ticket.booker['phone'] ?? '-'),
+                  _buildDetailRow('Email', ticket.booker['email'] ?? '-'),
                 ],
               ),
             ),

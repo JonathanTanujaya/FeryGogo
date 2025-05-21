@@ -1,12 +1,10 @@
 import 'package:ferry_ticket_app/screens/tiket/payment_detail_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../models/ticket.dart';
 import '../../models/passenger.dart';
 import '../../models/vehicle_category.dart';
 import '../../providers/profile_provider.dart';
-import 'payment_detail_screen.dart';
 
 class FormDataScreen extends StatefulWidget {
   final Ticket ticket;
@@ -285,7 +283,7 @@ class _FormDataScreenState extends State<FormDataScreen> {  final _formKey = Glo
       PassengerType.elderly => 'Lansia',
     };
   }
-  void _submitForm() {
+  void _submitForm() async {
     if (_formKey.currentState?.validate() ?? false) {
       try {
         final passengers = <Passenger>[];
@@ -339,15 +337,24 @@ class _FormDataScreenState extends State<FormDataScreen> {  final _formKey = Glo
           departureTime: widget.ticket.departureTime,
           price: totalPrice,
           shipName: widget.ticket.shipName,
-          ticketClass: widget.ticket.ticketClass,          status: widget.ticket.status,
+          ticketClass: widget.ticket.ticketClass,
+          status: widget.ticket.status,
           passengerCounts: actualCounts,
           passengers: passengers,
-          bookerName: profile?.name ?? '',
-          bookerPhone: profile?.phoneNumber ?? '',
-          bookerEmail: profile?.email ?? '',
+          booker: profile != null
+              ? {
+                  'uid': profile.id,
+                  'name': profile.name,
+                  'phone': profile.phoneNumber,
+                  'email': profile.email,
+                }
+              : {},
           vehicleCategory: selectedVehicle,
           vehiclePlateNumber: selectedVehicle != VehicleCategory.none ? plateNumberController.text : null,
         );
+
+        // Simpan tiket ke Firestore
+        await updatedTicket.saveToFirestore();
 
         // Navigate to payment screen
         if (mounted) {

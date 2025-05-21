@@ -1,3 +1,4 @@
+import 'package:ferry_ticket_app/providers/profile_provider.dart';
 import 'package:ferry_ticket_app/screens/tiket/ticket_popUp.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -338,6 +339,8 @@ class _HomeScreenState extends State<HomeScreen> {
             (passengerCounts[PassengerType.child] ?? 0) * (basePrice * 2 / 3);
       }
 
+      // Ambil data user dari provider
+      final profile = context.read<ProfileProvider>().userProfile;
       final ticket = Ticket(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         routeName: "${_fromController.text} - ${_toController.text}",
@@ -352,6 +355,14 @@ class _HomeScreenState extends State<HomeScreen> {
         status: "Aktif",
         passengerCounts: passengerCounts,
         vehicleCategory: _selectedCategory,
+        booker: profile != null
+            ? {
+                'uid': profile.id,
+                'name': profile.name,
+                'phone': profile.phoneNumber,
+                'email': profile.email,
+              }
+            : {},
       );
 
       // Assign ship name from Firebase based on service type

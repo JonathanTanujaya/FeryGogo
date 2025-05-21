@@ -91,9 +91,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
         status: data['status'],
         passengerCounts: passengerCounts,
         passengers: passengers,
-        bookerName: data['bookerName'] ?? '',
-        bookerPhone: data['bookerPhone'] ?? '',
-        bookerEmail: data['bookerEmail'] ?? '',
+        booker: data['booker'] ?? {},
         vehicleCategory: vehicleCategory,
         vehiclePlateNumber: data['vehiclePlateNumber'],
       );
@@ -381,9 +379,9 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  _buildDetailRow('Nama', _ticket!.bookerName),
-                  _buildDetailRow('Telepon', _ticket!.bookerPhone),
-                  _buildDetailRow('Email', _ticket!.bookerEmail),
+                  _buildDetailRow('Nama', _ticket!.booker['name'] ?? '-'),
+                  _buildDetailRow('Telepon', _ticket!.booker['phone'] ?? '-'),
+                  _buildDetailRow('Email', _ticket!.booker['email'] ?? '-'),
                 ],
               ),
             ),
