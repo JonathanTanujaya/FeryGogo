@@ -1,14 +1,13 @@
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class InformationModel {
   final String id;
   final String title;
-  final String description;
-  final String imageUrl;
+  final List<String> description; // array of String
+  final String imageUrl; // base64 string
   final DateTime publishDate;
-  final String author;
-  final String category;
-  final String? location;
-  final String? history;
-  final String? additionalInfo;
 
   InformationModel({
     required this.id,
@@ -16,25 +15,17 @@ class InformationModel {
     required this.description,
     required this.imageUrl,
     required this.publishDate,
-    required this.author,
-    required this.category,
-    this.location,
-    this.history,
-    this.additionalInfo,
   });
 
   factory InformationModel.fromMap(Map<String, dynamic> map, String id) {
     return InformationModel(
       id: id,
       title: map['title'] ?? '',
-      description: map['description'] ?? map['content'] ?? '',
+      description: (map['description'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
       imageUrl: map['imageUrl'] ?? '',
-      publishDate: DateTime.fromMillisecondsSinceEpoch(map['publishDate'] ?? 0),
-      author: map['author'] ?? '',
-      category: map['category'] ?? 'general',
-      location: map['location'],
-      history: map['history'],
-      additionalInfo: map['additionalInfo'],
+      publishDate: map['publishDate'] is Timestamp
+          ? (map['publishDate'] as Timestamp).toDate()
+          : DateTime.fromMillisecondsSinceEpoch(map['publishDate'] ?? 0),
     );
   }
 
@@ -44,11 +35,18 @@ class InformationModel {
       'description': description,
       'imageUrl': imageUrl,
       'publishDate': publishDate.millisecondsSinceEpoch,
-      'author': author,
-      'category': category,
-      'location': location,
-      'history': history,
-      'additionalInfo': additionalInfo,
     };
+  }
+
+  // Helper to decode base64 image
+  ImageProvider get imageProvider {
+    if (imageUrl.isEmpty) return const AssetImage('assets/ferygogo.png');
+    try {
+      // Remove data URI prefix if present
+      final base64Str = imageUrl.contains(',') ? imageUrl.split(',').last : imageUrl;
+      return MemoryImage(base64Decode(base64Str));
+    } catch (_) {
+      return const AssetImage('assets/ferygogo.png');
+    }
   }
 }

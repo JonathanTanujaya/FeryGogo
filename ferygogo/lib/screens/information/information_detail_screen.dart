@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/information_provider.dart';
-import '../models/information_model.dart';
+import 'package:intl/intl.dart';
+import '../../providers/information_provider.dart';
 
 class InformationDetailScreen extends StatelessWidget {
   final String documentId;
@@ -49,32 +49,40 @@ class InformationDetailScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (info.imageUrl.isNotEmpty)
-                      Container(
-                        width: double.infinity,
-                        height: 200,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          image: DecorationImage(
-                            image: NetworkImage(info.imageUrl),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: AspectRatio(
+                          aspectRatio: 16 / 9,
+                          child: Image(
+                            image: info.imageProvider,
                             fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.error),
+                              );
+                            },
                           ),
                         ),
                       ),
                     const SizedBox(height: 16),
                     Text(
-                      info.title,
-                      style: Theme.of(context).textTheme.headlineSmall,
+                      info.title.toUpperCase(),
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Dipublikasikan: ${info.publishDate}',
+                      DateFormat('dd MMM yyyy HH:mm').format(info.publishDate),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      info.description,
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
+                    ...info.description.map((desc) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            desc,
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                        )),
                     if (subcollectionData != null && subcollectionData.isNotEmpty) ...[
                       const SizedBox(height: 24),
                       const Divider(),

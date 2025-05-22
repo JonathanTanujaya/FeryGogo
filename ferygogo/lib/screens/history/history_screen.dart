@@ -57,31 +57,26 @@ class _HistoryScreenState extends State<HistoryScreen> {
           _isLoading = false;
         });
         return;
-      }      print('DEBUG: user.email = \'${user.email}\' and uid = \'${user.uid}\'');
-      // Query tickets from Firestore dengan filter email dan uid
-      final query = FirebaseFirestore.instance
-          .collection('tiket')
-          .where('bookerEmail', isEqualTo: user.email)
-          .where('userId', isEqualTo: user.uid) // Tambah filter berdasarkan uid
-          .orderBy('departureTime', descending: true) // Urutkan berdasarkan waktu keberangkatan
-          .limit(_pageSize);
-      
-      final snapshot = await query.get();
-      print('DEBUG: tiket ditemukan = \'${snapshot.docs.length}\'');
-      List<QueryDocumentSnapshot> docsToShow = snapshot.docs;
-      // Sort tickets manually by departure time
-      final sorted = docsToShow.toList()
-        ..sort((a, b) {
-          final dateA = DateTime.tryParse((a.data() as Map)['departureTime']?.toString() ?? '') ?? DateTime(2000);
-          final dateB = DateTime.tryParse((b.data() as Map)['departureTime']?.toString() ?? '') ?? DateTime(2000);
-          return dateB.compareTo(dateA); // descending order
-        });
+      }
+      // Ambil semua tiket, filter manual berdasarkan booker.uid
+      final snapshot = await FirebaseFirestore.instance.collection('tiket').get();
+      final myTickets = snapshot.docs.where((doc) {
+        final data = doc.data();
+        final booker = data['booker'] as Map<String, dynamic>? ?? {};
+        return booker['uid'] == user.uid;
+      }).toList();
+      // Sort tickets by departureTime descending
+      myTickets.sort((a, b) {
+        final dateA = DateTime.tryParse((a.data() as Map)['departureTime']?.toString() ?? '') ?? DateTime(2000);
+        final dateB = DateTime.tryParse((b.data() as Map)['departureTime']?.toString() ?? '') ?? DateTime(2000);
+        return dateB.compareTo(dateA);
+      });
       setState(() {
-        _tickets = sorted;
+        _tickets = myTickets.take(_pageSize).toList();
         _isLoading = false;
-        if (sorted.isNotEmpty) {
-          _lastDocument = sorted.last;
-          _hasMore = sorted.length >= _pageSize;
+        if (_tickets.isNotEmpty) {
+          _lastDocument = _tickets.last;
+          _hasMore = myTickets.length > _pageSize;
         } else {
           _hasMore = false;
         }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../providers/information_provider.dart';
-import '../models/information_model.dart';
+import '../../providers/information_provider.dart';
+import '../../models/information_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'information_detail_screen.dart';
 
@@ -197,8 +197,8 @@ class _InformationCard extends StatelessWidget {
                 ),
                 child: AspectRatio(
                   aspectRatio: 16 / 9,
-                  child: Image.network(
-                    information.imageUrl,
+                  child: Image(
+                    image: information.imageProvider,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
@@ -214,24 +214,6 @@ class _InformationCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      information.category,
-                      style: TextStyle(
-                        color: Theme.of(context).primaryColor,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
                   Text(
                     information.title,
                     style: const TextStyle(
@@ -241,33 +223,11 @@ class _InformationCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    information.description,
+                    DateFormat('dd MMM yyyy HH:mm').format(information.publishDate),
                     style: TextStyle(
                       color: Colors.grey[600],
+                      fontSize: 12,
                     ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Oleh: ${information.author}',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
-                      ),
-                      Text(
-                        DateFormat('dd MMM yyyy HH:mm')
-                            .format(information.publishDate),
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),

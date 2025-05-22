@@ -23,36 +23,18 @@ class InformationProvider with ChangeNotifier {
     _error = null;
     notifyListeners();    
     try {
-      // Daftar ID yang ingin diambil
-      final List<String> documentIds = ['N001', 'N002', 'N003', 'N004'];
       _information.clear();
-
-      // Ambil dokumen satu per satu berdasarkan ID
-      for (String id in documentIds) {
-        final docSnapshot = await _firestore
-            .collection('information')
-            .doc(id)
-            .get();
-
-        if (docSnapshot.exists) {
-          final data = docSnapshot.data()!;
-          final info = InformationModel.fromMap(data, docSnapshot.id);
-          _information.add(info);
-          
-          // Jika ini pengumuman utama
-          if (id == '1Z0A0MphzFKGdOoPdhUX') {
-            _mainAnnouncement = info;
-          }
-        } else {
-          print('Document $id does not exist');
+      final snapshot = await _firestore.collection('information').get();
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        // Perbaikan: cek dan trim spasi pada imageUrl jika ada
+        if (data['imageUrl'] is String) {
+          data['imageUrl'] = data['imageUrl'].trim();
         }
+        final info = InformationModel.fromMap(data, doc.id);
+        _information.add(info);
       }
-
-      // Add main announcement at the beginning if it exists
-      if (_mainAnnouncement != null) {
-        _information.insert(0, _mainAnnouncement!);
-      }
-
+      _information.sort((a, b) => b.publishDate.compareTo(a.publishDate));
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -72,48 +54,18 @@ class InformationProvider with ChangeNotifier {
           .collection('information')
           .doc(id)
           .get();
-
       if (docSnapshot.exists) {
         final data = docSnapshot.data()!;
+        // Perbaikan: cek dan trim spasi pada imageUrl jika ada
+        if (data['imageUrl'] is String) {
+          data['imageUrl'] = data['imageUrl'].trim();
+        }
         final info = InformationModel.fromMap(data, docSnapshot.id);
-        
-        if (id == '1Z0A0MphzFKGdOoPdhUX') {
-          _mainAnnouncement = info;
-        }
         _selectedInfo = info;
-
-        // Fetch subcollection data based on document ID
-        if (id == 'N004') {
-          final subcollectionSnapshot = await _firestore
-              .collection('information')
-              .doc(id)
-              .collection('IN004')
-              .get();
-
-          _subcollectionData = subcollectionSnapshot.docs
-              .map((doc) => doc.data())
-              .toList();
-        } else if (id == 'N001') {
-          final subcollectionSnapshot = await _firestore
-              .collection('information')
-              .doc(id)
-              .collection('isi')
-              .doc('IN001')
-              .get();
-
-          if (subcollectionSnapshot.exists) {
-            _subcollectionData = [subcollectionSnapshot.data()!];
-          } else {
-            _subcollectionData = null;
-          }
-        } else {
-          _subcollectionData = null;
-        }
-        
-        notifyListeners();
       }
+      notifyListeners();
     } catch (e) {
-      _error = 'Gagal memuat informasi spesifik: ${e.toString()}';
+      _error = 'Gagal memuat detail: ${e.toString()}';
       notifyListeners();
     }
   }
