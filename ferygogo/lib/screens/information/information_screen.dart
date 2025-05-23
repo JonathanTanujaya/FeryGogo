@@ -19,8 +19,6 @@ class _InformationScreenState extends State<InformationScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<InformationProvider>();
-      // Fetch specific information first
-      provider.fetchSpecificInformation('1Z0A0MphzFKGdOoPdhUX');
       // Then fetch all information
       provider.fetchInformation();
     });
@@ -80,70 +78,6 @@ class _InformationScreenState extends State<InformationScreen> {
               itemCount: provider.information.length,
               itemBuilder: (context, index) {
                 final info = provider.information[index];
-                
-                if (info.id == '1Z0A0MphzFKGdOoPdhUX') {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).primaryColor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.campaign_rounded,
-                                    color: Theme.of(context).primaryColor,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Pengumuman Penting',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(context).primaryColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            _InformationCard(
-                              information: info,
-                              isHighlighted: true,
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (index == 0) ...[
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          child: Divider(thickness: 1),
-                        ),
-                        const Text(
-                          'Informasi Lainnya',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                    ],
-                  );
-                }
                 return _InformationCard(information: info);
               },
             ),
@@ -156,11 +90,9 @@ class _InformationScreenState extends State<InformationScreen> {
 
 class _InformationCard extends StatelessWidget {
   final InformationModel information;
-  final bool isHighlighted;
 
   const _InformationCard({
     required this.information,
-    this.isHighlighted = false,
   });
 
   @override
@@ -168,72 +100,83 @@ class _InformationCard extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: isHighlighted ? 8 : 4,
+      elevation: 4,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: isHighlighted
-            ? BorderSide(color: Theme.of(context).primaryColor, width: 2)
-            : BorderSide.none,
       ),
       child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => InformationDetailScreen(
-                documentId: information.id,
-                title: information.title,
-              ),
-            ),
-          );
-        },
+        onTap: () => _openDetail(context),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (information.imageUrl.isNotEmpty)
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(12),
-                ),
-                child: AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: Image(
-                    image: information.imageProvider,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.error),
-                      );
-                    },
-                  ),
-                ),
-              ),
+              _buildImage(),
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    information.title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  _buildTitle(),
                   const SizedBox(height: 8),
-                  Text(
-                    DateFormat('dd MMM yyyy HH:mm').format(information.publishDate),
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
-                  ),
+                  _buildPublishDate(),
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _openDetail(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => InformationDetailScreen(
+          documentId: information.id,
+          title: information.title,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImage() {
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(12),
+      ),
+      child: AspectRatio(
+        aspectRatio: 16 / 9,
+        child: Image(
+          image: information.imageProvider,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              color: Colors.grey[300],
+              child: const Icon(Icons.error),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTitle() {
+    return Text(
+      information.title,
+      style: const TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+
+  Widget _buildPublishDate() {
+    return Text(
+      DateFormat('dd MMM yyyy HH:mm').format(information.publishDate),
+      style: TextStyle(
+        color: Colors.grey[600],
+        fontSize: 12,
       ),
     );
   }

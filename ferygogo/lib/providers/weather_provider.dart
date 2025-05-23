@@ -15,7 +15,7 @@ class WeatherProvider with ChangeNotifier {
 
   // API Configuration
   static const String _baseUrl = 'https://www.meteosource.com/api/v1/free/point';
-  static const String _apiKey = 'rzx8nw1h83ij7mrz3e35vqjb2w4zj7wv9nx2qqjq';
+  static const String _apiKey = 'oa00vbvm1ghkdeiv7m9cphlq99aevxeumlmvbwva';
 
   // Koordinat Pelabuhan
   static const Map<String, Map<String, double>> _portCoordinates = { 

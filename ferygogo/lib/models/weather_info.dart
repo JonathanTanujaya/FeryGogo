@@ -29,6 +29,21 @@ class WeatherInfo {
     'icon': icon,
     'hourlyForecast': hourlyForecast.map((h) => h.toJson()).toList(),
   };
+  static const Map<String, String> meteosourceIconMapping = {
+    'clear-day': '01d',
+    'clear-night': '01n',
+    'cloudy': '04d',
+    'partly-cloudy-day': '02d',
+    'partly-cloudy-night': '02n',
+    'rain': '10d',
+    'snow': '13d',
+    'thunderstorm': '11d',
+    'fog': '50d',
+  };
+
+  static String mapMeteosourceIcon(String meteosourceIcon) {
+    return meteosourceIconMapping[meteosourceIcon] ?? '01d';
+  }
   factory WeatherInfo.fromMap(Map<String, dynamic> data) {
     final current = data['current'] as Map<String, dynamic>;
     
@@ -52,7 +67,7 @@ class WeatherInfo {
       humidity: (current['humidity'] as num?)?.toDouble() ?? 0.0,
       windSpeed: windSpeed,
       waveCondition: waveCondition,
-      icon: _mapMeteosourceIcon(current['icon'] as String? ?? ''),
+      icon: WeatherInfo.mapMeteosourceIcon(current['icon'] as String? ?? ''),
       hourlyForecast: _parseHourlyForecast(data['hourly'] as List<dynamic>? ?? []),
     );
   }
@@ -63,26 +78,10 @@ class WeatherInfo {
       return HourlyForecast(
         time: DateTime.fromMillisecondsSinceEpoch(hourMap['date'] * 1000),
         temperature: (hourMap['temperature'] as num).toDouble(),
-        icon: _mapMeteosourceIcon(hourMap['icon_code'] as String? ?? ''),
+        icon: WeatherInfo.mapMeteosourceIcon(hourMap['icon_code'] as String? ?? ''),
         windSpeed: ((hourMap['wind'] as Map<String, dynamic>)['speed'] as num).toDouble(),
       );
     }).toList();
-  }
-
-  static String _mapMeteosourceIcon(String meteosourceIcon) {
-    final Map<String, String> iconMapping = {
-      'clear-day': '01d',
-      'clear-night': '01n',
-      'cloudy': '04d',
-      'partly-cloudy-day': '02d',
-      'partly-cloudy-night': '02n',
-      'rain': '10d',
-      'snow': '13d',
-      'thunderstorm': '11d',
-      'fog': '50d',
-    };
-
-    return iconMapping[meteosourceIcon] ?? '01d';
   }
 }
 
@@ -110,7 +109,7 @@ class HourlyForecast {
     return HourlyForecast(
       time: DateTime.parse(json['time'] as String),
       temperature: (json['temperature'] ?? 0.0).toDouble(),
-      icon: json['icon'] ?? '',
+      icon: WeatherInfo.mapMeteosourceIcon(json['icon'] ?? ''),
       windSpeed: (json['windSpeed'] ?? 0.0).toDouble(),
     );
   }

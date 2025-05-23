@@ -537,6 +537,9 @@ class WeatherCard extends StatelessWidget {
     );
   }
 
+  /// Returns a weather icon based on the mapped meteosource icon code (e.g. '01d', '02d', etc).
+  ///
+  /// [iconCode] should be the result of WeatherInfo.mapMeteosourceIcon().
   Widget _getCustomWeatherIcon(String iconCode, double size) {
     IconData iconData;
     Color iconColor;

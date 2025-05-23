@@ -22,13 +22,13 @@ class WeatherService {
         description: data['description'] ?? '',
         humidity: (data['humidity'] ?? 0.0).toDouble(),
         windSpeed: (data['windSpeed'] ?? 0.0).toDouble(),
-        icon: data['icon'] ?? '',
+        icon: WeatherInfo.mapMeteosourceIcon(data['icon'] ?? ''),
         waveCondition: data['waveCondition'] ?? '',
         hourlyForecast: hourlyData.map<HourlyForecast>((hour) {
           return HourlyForecast(
             time: (hour['time'] as Timestamp).toDate(),
             temperature: (hour['temperature'] ?? 0.0).toDouble(),
-            icon: hour['icon'] ?? '',
+            icon: WeatherInfo.mapMeteosourceIcon(hour['icon'] ?? ''),
             windSpeed: (hour['windSpeed'] ?? 0.0).toDouble(),
           );
         }).toList(),
@@ -77,13 +77,13 @@ class WeatherService {
         description: data['description'] ?? '',
         humidity: (data['humidity'] ?? 0.0).toDouble(),
         windSpeed: (data['windSpeed'] ?? 0.0).toDouble(),
-        icon: data['icon'] ?? '',
+        icon: WeatherInfo.mapMeteosourceIcon(data['icon'] ?? ''),
         waveCondition: data['waveCondition'] ?? '',
         hourlyForecast: hourlyData.map<HourlyForecast>((hour) {
           return HourlyForecast(
             time: (hour['time'] as Timestamp).toDate(),
             temperature: (hour['temperature'] ?? 0.0).toDouble(),
-            icon: hour['icon'] ?? '',
+            icon: WeatherInfo.mapMeteosourceIcon(hour['icon'] ?? ''),
             windSpeed: (hour['windSpeed'] ?? 0.0).toDouble(),
           );
         }).toList(),
