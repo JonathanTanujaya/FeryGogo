@@ -116,7 +116,7 @@ class _FormDataScreenState extends State<FormDataScreen> {  final _formKey = Glo
           onPressed: _submitForm,
           style: ElevatedButton.styleFrom(
             backgroundColor: Theme.of(context).brightness == Brightness.dark
-                ? const Color(0xFF3B7DE9) // Warna lebih terang untuk dark mode
+                ? const Color(0xFF0F52BA) // Warna lebih terang untuk dark mode
                 : const Color(0xFF0F52BA), // Warna asli untuk light mode
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 16),

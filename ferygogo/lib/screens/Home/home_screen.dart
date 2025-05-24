@@ -445,9 +445,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ? const Center(child: CircularProgressIndicator())
               : SafeArea(
                 child: SingleChildScrollView(
-                  controller: _scrollController,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                  controller: _scrollController,                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -458,11 +457,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             _buildLocationInfo(), // Menampilkan info lokasi
                           ],
                         ),
-                        const TripTypeSelector(),
-                        Card(
-                          margin: const EdgeInsets.all(16),
+                        const TripTypeSelector(),                        Card(
+                          margin: const EdgeInsets.all(8),
                           child: Padding(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(12),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [

@@ -30,17 +30,20 @@ class PassengerSelector extends StatelessWidget {
           child: Column(
             children: [
               _buildPassengerTypeRow(
+                context,
                 'Dewasa (17-60 tahun)',
                 PassengerType.adult,
                 minValue: 1,
               ),
               const Divider(height: 1),
               _buildPassengerTypeRow(
+                context,
                 'Anak (<17 tahun)',
                 PassengerType.child,
               ),
               const Divider(height: 1),
               _buildPassengerTypeRow(
+                context,
                 'Lansia (>60 tahun)',
                 PassengerType.elderly,
               ),
@@ -51,14 +54,23 @@ class PassengerSelector extends StatelessWidget {
     );
   }
 
-  Widget _buildPassengerTypeRow(String label, PassengerType type, {int minValue = 0}) {
+  Widget _buildPassengerTypeRow(BuildContext context, String label, PassengerType type, {int minValue = 0}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black87,
+              ),
+            ),
+          ),
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
                 onPressed: passengerCounts[type]! > minValue
@@ -66,18 +78,35 @@ class PassengerSelector extends StatelessWidget {
                     : null,
                 icon: const Icon(Icons.remove_circle_outline),
                 color: passengerCounts[type]! > minValue ? sapphire : Colors.grey,
+                constraints: const BoxConstraints(
+                  minWidth: 40,
+                  minHeight: 40,
+                ),
+                padding: EdgeInsets.zero,
               ),
-              Text(
-                passengerCounts[type].toString(),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+              Container(
+                width: 30,
+                alignment: Alignment.center,
+                child: Text(
+                  passengerCounts[type].toString(),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : Colors.black87,
+                  ),
                 ),
               ),
               IconButton(
                 onPressed: () => onCountChanged(type, passengerCounts[type]! + 1),
                 icon: const Icon(Icons.add_circle_outline),
                 color: sapphire,
+                constraints: const BoxConstraints(
+                  minWidth: 40,
+                  minHeight: 40,
+                ),
+                padding: EdgeInsets.zero,
               ),
             ],
           ),
