@@ -39,7 +39,7 @@ class WeatherCard extends StatelessWidget {
   Widget _buildLoadingState() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      height: 280,
+      height: 200,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: LinearGradient(
@@ -53,19 +53,19 @@ class WeatherCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              width: 50,
-              height: 50,
+              width: 40,
+              height: 40,
               child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withOpacity(0.8)),
-                strokeWidth: 4,
+                strokeWidth: 3,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Text(
               'Memuat data cuaca...',
               style: TextStyle(
                 color: Colors.white.withOpacity(0.9),
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -256,17 +256,8 @@ class WeatherCard extends StatelessWidget {
                 // Main weather info with icon and temperature
                 _buildMainWeatherInfo(weather),
                 
-                // Divider
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Divider(
-                    color: Colors.white.withOpacity(0.3),
-                    thickness: 1,
-                  ),
-                ),
-                
-                // Weather metrics (humidity, wind)
-                _buildWeatherMetrics(weather),
+                // Wind speed only (compact)
+                _buildWindInfo(weather),
                 
                 // Wave condition
                 _buildWaveCondition(weather),
@@ -284,14 +275,14 @@ class WeatherCard extends StatelessWidget {
 
   Widget _buildHeader(WeatherInfo weather, WeatherProvider weatherProvider) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             weather.cityName,
             style: const TextStyle(
-              fontSize: 22,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -301,7 +292,7 @@ class WeatherCard extends StatelessWidget {
               isNearMerak: isNearMerak,
             ),
             child: Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.2),
                 shape: BoxShape.circle,
@@ -309,7 +300,7 @@ class WeatherCard extends StatelessWidget {
               child: const Icon(
                 Icons.refresh_rounded,
                 color: Colors.white,
-                size: 20,
+                size: 18,
               ),
             ),
           ),
@@ -320,7 +311,7 @@ class WeatherCard extends StatelessWidget {
 
   Widget _buildMainWeatherInfo(WeatherInfo weather) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 15),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -331,7 +322,7 @@ class WeatherCard extends StatelessWidget {
               Text(
                 '${weather.temperature.round()}°',
                 style: const TextStyle(
-                  fontSize: 64,
+                  fontSize: 52,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                   height: 1,
@@ -340,7 +331,7 @@ class WeatherCard extends StatelessWidget {
               Text(
                 weather.description,
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 14,
                   color: Colors.white.withOpacity(0.9),
                 ),
               ),
@@ -348,97 +339,71 @@ class WeatherCard extends StatelessWidget {
           ),
           Hero(
             tag: 'weather_icon_${isNearMerak ? "merak" : "bakauheni"}',
-            child: _getCustomWeatherIcon(weather.icon, 80),
+            child: _getCustomWeatherIcon(weather.icon, 70),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildWeatherMetrics(WeatherInfo weather) {
+  Widget _buildWindInfo(WeatherInfo weather) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _buildMetricItem(
-            Icons.water_drop_outlined,
-            '${weather.humidity.round()}%',
-            'Kelembaban',
-          ),
-          _buildVerticalDivider(),
-          _buildMetricItem(
+          Icon(
             Icons.air_outlined,
+            color: Colors.white,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Text(
             '${weather.windSpeed.toStringAsFixed(1)} m/s',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
             'Angin',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.8),
+              fontSize: 14,
+            ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildMetricItem(IconData icon, String value, String label) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          color: Colors.white,
-          size: 24,
-        ),
-        const SizedBox(height: 5),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.7),
-            fontSize: 12,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildVerticalDivider() {
-    return Container(
-      height: 40,
-      width: 1,
-      color: Colors.white.withOpacity(0.3),
     );
   }
 
   Widget _buildWaveCondition(WeatherInfo weather) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'Kondisi Gelombang',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w500,
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
               color: _getWaveConditionBackgroundColor(weather.waveCondition),
-              borderRadius: BorderRadius.circular(30),
+              borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -446,15 +411,15 @@ class WeatherCard extends StatelessWidget {
                 Icon(
                   _getWaveConditionIcon(weather.waveCondition),
                   color: Colors.white,
-                  size: 18,
+                  size: 16,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 Text(
                   weather.waveCondition,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontSize: 13,
                   ),
                 ),
               ],
@@ -467,7 +432,7 @@ class WeatherCard extends StatelessWidget {
 
   Widget _buildHourlyForecast(WeatherInfo weather) {
     return Container(
-      padding: const EdgeInsets.only(top: 10, bottom: 20),
+      padding: const EdgeInsets.only(top: 8, bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -476,15 +441,15 @@ class WeatherCard extends StatelessWidget {
             child: Text(
               'Prakiraan Per Jam',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: FontWeight.w500,
                 color: Colors.white.withOpacity(0.9),
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           SizedBox(
-            height: 100,
+            height: 85,
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               scrollDirection: Axis.horizontal,
@@ -494,13 +459,13 @@ class WeatherCard extends StatelessWidget {
                 final isNow = index == 0;
                 
                 return Container(
-                  width: 60,
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: 55,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
                   decoration: BoxDecoration(
                     color: isNow 
                         ? Colors.white.withOpacity(0.2) 
                         : Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                     border: isNow 
                         ? Border.all(color: Colors.white.withOpacity(0.5), width: 1) 
                         : null,
@@ -511,17 +476,17 @@ class WeatherCard extends StatelessWidget {
                       Text(
                         DateFormat('HH:mm').format(forecast.time),
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 11,
                           color: Colors.white.withOpacity(isNow ? 1.0 : 0.8),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      _getCustomWeatherIcon(forecast.icon, 28),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
+                      _getCustomWeatherIcon(forecast.icon, 24),
+                      const SizedBox(height: 6),
                       Text(
                         '${forecast.temperature.round()}°',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 13,
                           fontWeight: FontWeight.bold,
                           color: Colors.white.withOpacity(isNow ? 1.0 : 0.8),
                         ),
@@ -612,21 +577,6 @@ class WeatherCard extends StatelessWidget {
         return Icons.tsunami;
       default:
         return Icons.waves;
-    }
-  }
-
-  Color _getWaveConditionColor(String condition) {
-    switch (condition.toLowerCase()) {
-      case 'tenang':
-        return Colors.green;
-      case 'ringan':
-        return Colors.blue;
-      case 'sedang':
-        return Colors.orange;
-      case 'tinggi':
-        return Colors.red;
-      default:
-        return Colors.grey;
     }
   }
 

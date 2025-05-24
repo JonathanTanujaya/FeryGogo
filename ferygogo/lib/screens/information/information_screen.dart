@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../providers/information_provider.dart';
 import '../../models/information_model.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'information_detail_screen.dart';
 
 class InformationScreen extends StatefulWidget {
@@ -63,10 +62,7 @@ class _InformationScreenState extends State<InformationScreen> {
                   ),
                 ],
               ),
-            );
-          }
-
-          if (provider.information.isEmpty) {
+            );          }          if (provider.information.isEmpty) {
             return const Center(
               child: Text('Belum ada informasi'),
             );

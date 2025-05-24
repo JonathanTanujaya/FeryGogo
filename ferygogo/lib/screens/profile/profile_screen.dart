@@ -35,7 +35,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
       body: Consumer<ProfileProvider>(
         builder: (context, provider, child) {
@@ -54,23 +54,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          final profile = context.read<ProfileProvider>().userProfile;
-          if (profile != null) {
-            _logic.navigateToEditProfile(profile);
-          }
-        },
-        backgroundColor: primaryColor,
-        child: const Icon(Icons.edit, color: Colors.white),
-      ),
     );
   }
 
   Widget _buildAppBar(ProfileProvider provider) {
     final profile = provider.userProfile;
     final themeProvider = Provider.of<ThemeProvider>(context);
-    
+
     return SliverAppBar(
       expandedHeight: 200,
       pinned: true,
@@ -98,52 +88,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                primaryColor,
-                primaryColor.withOpacity(0.7),
-              ],
+              colors: [primaryColor, primaryColor.withOpacity(0.7)],
             ),
           ),
-          child: profile != null ? SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                physics: const NeverScrollableScrollPhysics(),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 16),
-                    _buildProfileImage(profile),
-                    const SizedBox(height: 8),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        profile.name.isNotEmpty ? profile.name : 'Belum diatur',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+          child:
+              profile != null
+                  ? SafeArea(
+                    child: Center(
+                      child: SingleChildScrollView(
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(height: 16),
+                            _buildProfileImage(profile),
+                            const SizedBox(height: 8),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                profile.name.isNotEmpty
+                                    ? profile.name
+                                    : 'Belum diatur',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            if (profile.email.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    profile.email,
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ),
-                    if (profile.email.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            profile.email,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ) : null,
+                  )
+                  : null,
         ),
       ),
     );
@@ -153,9 +145,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (provider.isLoading) {
       return SizedBox(
         height: size.height - 200,
-        child: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        child: const Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -166,11 +156,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Colors.red[300],
-              ),
+              Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
               const SizedBox(height: 16),
               Text(
                 provider.error!,
@@ -200,11 +186,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.person_off,
-                size: 64,
-                color: Colors.grey[400],
-              ),
+              Icon(Icons.person_off, size: 64, color: Colors.grey[400]),
               const SizedBox(height: 16),
               Text(
                 'Profil tidak ditemukan',
@@ -246,7 +228,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildInfoTile(
                 icon: Icons.phone,
                 label: 'Nomor Telepon',
-                value: profile.phoneNumber.isNotEmpty ? profile.phoneNumber : 'Belum diatur',
+                value:
+                    profile.phoneNumber.isNotEmpty
+                        ? profile.phoneNumber
+                        : 'Belum diatur',
                 isDarkMode: isDarkMode,
               ),
             ],
@@ -267,30 +252,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildInfoTile(
                 icon: Icons.people,
                 label: 'Jenis Kelamin',
-                value: profile.gender.isNotEmpty ? profile.gender : 'Belum diatur',
+                value:
+                    profile.gender.isNotEmpty ? profile.gender : 'Belum diatur',
                 isDarkMode: isDarkMode,
               ),
               const Divider(height: 1),
               _buildInfoTile(
                 icon: Icons.cake,
                 label: 'Tanggal Lahir',
-                value: profile.birthDate != null 
-                    ? DateFormat('dd MMMM yyyy').format(profile.birthDate!)
-                    : 'Belum diatur',
+                value:
+                    profile.birthDate != null
+                        ? DateFormat('dd MMMM yyyy').format(profile.birthDate!)
+                        : 'Belum diatur',
                 isDarkMode: isDarkMode,
               ),
               const Divider(height: 1),
               _buildInfoTile(
                 icon: Icons.badge,
                 label: 'Jenis Identitas',
-                value: profile.identityType.isNotEmpty ? profile.identityType : 'Belum diatur',
+                value:
+                    profile.identityType.isNotEmpty
+                        ? profile.identityType
+                        : 'Belum diatur',
                 isDarkMode: isDarkMode,
               ),
               const Divider(height: 1),
               _buildInfoTile(
                 icon: Icons.credit_card,
                 label: 'Nomor Identitas',
-                value: profile.identityNumber.isNotEmpty ? profile.identityNumber : 'Belum diatur',
+                value:
+                    profile.identityNumber.isNotEmpty
+                        ? profile.identityNumber
+                        : 'Belum diatur',
                 isDarkMode: isDarkMode,
               ),
             ],
@@ -309,12 +302,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: CircleAvatar(
         radius: 60,
         backgroundColor: Colors.grey[200],
-        backgroundImage: (profile.imageBase64 != null && profile.imageBase64!.isNotEmpty)
-            ? MemoryImage(base64Decode(profile.imageBase64!))
-            : null,
-        child: (profile.imageBase64 == null || profile.imageBase64!.isEmpty)
-            ? const Icon(Icons.account_circle, size: 80, color: Colors.grey)
-            : null,
+        backgroundImage:
+            (profile.imageBase64 != null && profile.imageBase64!.isNotEmpty)
+                ? MemoryImage(base64Decode(profile.imageBase64!))
+                : null,
+        child:
+            (profile.imageBase64 == null || profile.imageBase64!.isEmpty)
+                ? const Icon(Icons.account_circle, size: 80, color: Colors.grey)
+                : null,
       ),
     );
   }
@@ -348,9 +343,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Column(
-            children: children,
-          ),
+          child: Column(children: children),
         ),
       ],
     );
@@ -369,11 +362,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           color: primaryColor.withOpacity(0.1),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(
-          icon,
-          color: primaryColor,
-          size: 20,
-        ),
+        child: Icon(icon, color: primaryColor, size: 20),
       ),
       title: Text(
         label,
@@ -437,30 +426,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showLogoutDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Konfirmasi'),
-        content: const Text('Anda yakin ingin keluar dari aplikasi?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Batal',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Konfirmasi'),
+            content: const Text('Anda yakin ingin keluar dari aplikasi?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _logic.signOut();
+                },
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: primaryColor,
+                ),
+                child: const Text('Keluar'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _logic.signOut();
-            },
-            style: ElevatedButton.styleFrom(
-              foregroundColor: Colors.white,
-              backgroundColor: primaryColor,
-            ),
-            child: const Text('Keluar'),
-          ),
-        ],
-      ),
     );
   }
 }

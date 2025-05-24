@@ -21,8 +21,8 @@ class VehicleClass {
     VehicleClass(
       code: 'PEDESTRIAN',
       name: 'Pejalan Kaki',
-      description: 'Dewasa: Rp 15.000\nAnak-anak: Rp 10.000',
-      basePrice: 15000, // Base price for adults
+      description: 'Dewasa: Rp 15.000',
+      basePrice: 15000,
       isPricePerPerson: true,
     ),
     VehicleClass(

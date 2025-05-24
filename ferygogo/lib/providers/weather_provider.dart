@@ -79,10 +79,13 @@ class WeatherProvider with ChangeNotifier {
       };
 
       final uri = Uri.parse(_baseUrl).replace(queryParameters: queryParams);
-      final response = await http.get(uri);
-
-      if (response.statusCode == 200) {
+      final response = await http.get(uri);      if (response.statusCode == 200) {
         final data = json.decode(response.body);
+
+        // Determine correct icon field and humidity
+        final currentData = data['current'];
+        final iconCode = currentData['icon_code'] ?? currentData['icon'] ?? 'clear-day';
+        final humidity = currentData['humidity'] ?? 70.0; // Default humidity if not available
 
         final List<Map<String, dynamic>> processedHourly = [];
         if (data['hourly']?['data'] != null) {
@@ -92,6 +95,8 @@ class WeatherProvider with ChangeNotifier {
               final DateTime dateTime = DateTime.parse(hour['date']);
               processedHour['date'] = dateTime.millisecondsSinceEpoch ~/ 1000;
             }
+            // Add icon code for hourly data with fallback
+            processedHour['icon_code'] = hour['icon_code'] ?? hour['icon'] ?? 'clear-day';
             processedHourly.add(processedHour);
           }
         }
@@ -99,13 +104,13 @@ class WeatherProvider with ChangeNotifier {
         return {
           'cityName': isNearMerak ? 'Merak' : 'Bakauheni',
           'current': {
-            'temperature': data['current']['temperature'],
-            'humidity': data['current']['humidity'],
+            'temperature': currentData['temperature'],
+            'humidity': humidity,
             'wind': {
-              'speed': data['current']['wind']['speed'],
+              'speed': currentData['wind']['speed'],
             },
-            'summary': data['current']['summary'],
-            'icon': data['current']['icon_code'],
+            'summary': currentData['summary'],
+            'icon': iconCode,
           },
           'hourly': processedHourly,
         };

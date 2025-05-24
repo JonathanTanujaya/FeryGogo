@@ -102,26 +102,28 @@ class _FormDataScreenState extends State<FormDataScreen> {  final _formKey = Glo
             const SizedBox(height: 16),
             ..._passengers.asMap().entries.map((entry) {
               return _buildPassengerForm(entry.key);
-            }),
-            if (widget.ticket.vehicleCategory != VehicleCategory.none) ...[
+            }),            if (widget.ticket.vehicleCategory != VehicleCategory.none && 
+                widget.ticket.vehicleCategory != VehicleCategory.golongan1) ...[
               const SizedBox(height: 24),
               _buildVehicleInfoSection(),
             ],
             const SizedBox(height: 16),
           ],
-        ),
-      ),
+        ),      ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16),
         child: ElevatedButton(
           onPressed: _submitForm,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF0F52BA),
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF3B7DE9) // Warna lebih terang untuk dark mode
+                : const Color(0xFF0F52BA), // Warna asli untuk light mode
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
+            elevation: Theme.of(context).brightness == Brightness.dark ? 8 : 2,
           ),
           child: const Text(
             'Lanjutkan ke Pembayaran',
@@ -134,29 +136,50 @@ class _FormDataScreenState extends State<FormDataScreen> {  final _formKey = Glo
       ),
     );
   }
-
   Widget _buildVehicleInfoSection() {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
+      elevation: Theme.of(context).brightness == Brightness.dark ? 4 : 2,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? Colors.grey[800] 
+          : null,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Informasi Kendaraan',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black,
               ),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: plateNumberController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Plat Nomor Kendaraan',
                 hintText: 'Contoh: B 1234 XYZ',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                labelStyle: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey[300]
+                      : null,
+                ),
+                hintStyle: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey[400]
+                      : null,
+                ),
+              ),
+              style: TextStyle(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black,
               ),
               textCapitalization: TextCapitalization.characters,
               validator: (value) {
@@ -171,11 +194,14 @@ class _FormDataScreenState extends State<FormDataScreen> {  final _formKey = Glo
       ),
     );
   }
-
   Widget _buildPassengerForm(int index) {
     final passenger = _passengers[index];
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
+      elevation: Theme.of(context).brightness == Brightness.dark ? 4 : 2,
+      color: Theme.of(context).brightness == Brightness.dark 
+          ? Colors.grey[800] 
+          : null,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -183,17 +209,30 @@ class _FormDataScreenState extends State<FormDataScreen> {  final _formKey = Glo
           children: [
             Text(
               'Penumpang ${index + 1} - ${_getPassengerTypeLabel(passenger.type)}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black,
               ),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: passenger.nameController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Nama Lengkap',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                labelStyle: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey[300]
+                      : null,
+                ),
+              ),
+              style: TextStyle(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black,
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
@@ -350,7 +389,10 @@ class _FormDataScreenState extends State<FormDataScreen> {  final _formKey = Glo
                 }
               : {},
           vehicleCategory: selectedVehicle,
-          vehiclePlateNumber: selectedVehicle != VehicleCategory.none ? plateNumberController.text : null,
+          vehiclePlateNumber: (selectedVehicle != VehicleCategory.none && 
+                                selectedVehicle != VehicleCategory.golongan1) 
+                              ? plateNumberController.text 
+                              : null,
         );
 
         // Simpan tiket ke Firestore

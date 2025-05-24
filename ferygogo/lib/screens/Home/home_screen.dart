@@ -536,9 +536,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 !_isSearching &&
                                                 _totalPassengers > 0
                                             ? _searchSchedules
-                                            : null,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: sapphire,
+                                            : null,                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Theme.of(context).brightness == Brightness.dark
+                                          ? skyBlue // Lighter blue for dark mode
+                                          : sapphire, // Original blue for light mode
                                       foregroundColor: Colors.white,
                                       padding: const EdgeInsets.symmetric(
                                         vertical: 16,
@@ -546,8 +547,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      disabledBackgroundColor:
-                                          Colors.grey.shade300,
+                                      disabledBackgroundColor: Theme.of(context).brightness == Brightness.dark
+                                          ? Colors.grey.shade700
+                                          : Colors.grey.shade300,
+                                      elevation: Theme.of(context).brightness == Brightness.dark ? 8 : 2,
                                     ),
                                     child:
                                         _isSearching

@@ -12,7 +12,14 @@ class WeatherService {
         .snapshots()
         .map((snapshot) {
       if (!snapshot.exists) return null;
-        final data = snapshot.data()!;
+      
+      final data = snapshot.data()!;
+      print('DEBUG Stream Weather raw data for $location: $data');
+      print('DEBUG Stream Icon from Firestore: ${data['icon']}');
+      print('DEBUG Stream Mapped icon: ${WeatherInfo.mapMeteosourceIcon(data['icon']?.toString() ?? '')}');
+      print('DEBUG Stream Humidity: ${data['humidity']}');
+      print('DEBUG Stream Wave condition: ${data['waveCondition']}');
+      
       final List<dynamic> hourlyData = data['hourlyForecast'] ?? [];
       
       return WeatherInfo(
@@ -82,7 +89,15 @@ class WeatherService {
   Future<WeatherInfo?> getWeatherData(String location) async {
     try {
       final doc = await _firestore.collection('weather').doc(location).get();
-      if (!doc.exists) return null;      final data = doc.data()!;
+      if (!doc.exists) return null;
+
+      final data = doc.data()!;
+      print('DEBUG Weather raw data for $location: $data');
+      print('DEBUG Icon from Firestore: ${data['icon']}');
+      print('DEBUG Mapped icon: ${WeatherInfo.mapMeteosourceIcon(data['icon']?.toString() ?? '')}');
+      print('DEBUG Humidity: ${data['humidity']}');
+      print('DEBUG Wave condition: ${data['waveCondition']}');
+      
       final List<dynamic> hourlyData = data['hourlyForecast'] ?? [];
 
       return WeatherInfo(

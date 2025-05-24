@@ -22,19 +22,16 @@ class InformationProvider with ChangeNotifier {
     _isLoading = true;
     _error = null;
     notifyListeners();    
-    try {
-      _information.clear();
+    try {      _information.clear();
       final snapshot = await _firestore.collection('information').get();
       for (final doc in snapshot.docs) {
         final data = doc.data();
         // Perbaikan: cek dan trim spasi pada imageUrl jika ada
         if (data['imageUrl'] is String) {
           data['imageUrl'] = data['imageUrl'].trim();
-        }
-        final info = InformationModel.fromMap(data, doc.id);
+        }        final info = InformationModel.fromMap(data, doc.id);
         _information.add(info);
       }
-      _information.sort((a, b) => b.publishDate.compareTo(a.publishDate));
       _isLoading = false;
       notifyListeners();
     } catch (e) {
